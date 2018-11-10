@@ -16,7 +16,7 @@ namespace GameProcessFunc
 	void ProcessCollision(float ElapsedTime);
 
 	bool RecvInput(SOCKET sock, int ClientID);
-	bool SendCommunicationData(SOCKET sock);
+	bool SendCommunicationData(SOCKET sock, int ClientID);
 	void ResetCommunicationBuffer();
 }
 ///////////////////////////////////////////////////////////////////////////////////////////

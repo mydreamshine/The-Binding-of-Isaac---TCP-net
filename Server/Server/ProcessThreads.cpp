@@ -3,6 +3,8 @@
 HANDLE hRecvAllEvent[MAX_CLIENT];
 HANDLE hUpdateEvent;
 
+unsigned int CurClientNum = 0;
+bool GameStart = false;
 
 void CreateThreadControlEvents()
 {
@@ -32,6 +34,14 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 	// 게임 오브젝트가 Update가 완료 될 때까지 대기
 	WaitForSingleObject(hUpdateEvent, INFINITE);
 
+	// MAX_CLIENT보다 많은 수의 클라이언트를 수용하지 않음
+	if (CurClientNum == MAX_CLIENT)
+	{
+		closesocket(client_sock);
+		cout << "[TCP 서버] 클라이언트 접속제한(인원초과): IP 주소=" << inet_ntoa(clientaddr.sin_addr) << ", 포트번호=" << ntohs(clientaddr.sin_port) << endl;
+		return 0;
+	}
+
 	int ClientID = GameProcessFunc::CreateNewPlayer();
 	if (ClientID == -1)
 	{
@@ -41,10 +51,13 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 	}
 	else
 	{
+		GameStart = true;
+		// 접속 클라이언트 수 증가
+		++CurClientNum;
 		// 게임 오브젝트의 정보를 통신 오브젝트에 반영
 		GameProcessFunc::ResetCommunicationBuffer();
 		// 최초 게임 입장할 때, 처음 렌더링하기 위한 모든 오브젝트의 정보를 보내줌.
-		if (!GameProcessFunc::SendCommunicationData(client_sock))
+		if (!GameProcessFunc::SendCommunicationData(client_sock, ClientID))
 		{
 			closesocket(client_sock);
 			cout << "[TCP 서버] 클라이언트 접속제한(인원초과): IP 주소=" << inet_ntoa(clientaddr.sin_addr) << ", 포트번호=" << ntohs(clientaddr.sin_port) << endl;
@@ -59,7 +72,11 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 	{
 		// 키 값을 받아옴
 		if (!GameProcessFunc::RecvInput(client_sock, ClientID))
+		{
+			--CurClientNum;
+			for (int i = 0; i < MAX_CLIENT; ++i) SetEvent(hRecvAllEvent[i]);
 			break;
+		}
 
 		// 리시브를 받았다는 것을 알림
 		//SetEvent(hRecvAllEvent[ClientID]);
@@ -73,8 +90,11 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 		WaitForSingleObject(hUpdateEvent, INFINITE);
 
 		// 업데이트 된 정보를 클라이언트에게 보냄
-		if (!GameProcessFunc::SendCommunicationData(client_sock))
+		if (!GameProcessFunc::SendCommunicationData(client_sock, ClientID))
+		{
+			--CurClientNum;
 			break;
+		}
 	}
 
 	// 소켓 메모리 해제(클라이언트 소켓부터.)
@@ -89,6 +109,18 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 {
 	while (true)
 	{
+		if (CurClientNum == 0)
+		{
+			// 접속한 클라이언트가 없어도(현재 클라이언트 수: 0) Update는 돌아가야 한다.
+			// 단, Update되어야 할 오브젝트는 존재하지 않게 한다.
+			if (GameStart)
+			{
+				GameProcessFunc::InitGameObject();
+				GameStart = false;
+			}
+			for (int i = 0; i < MAX_CLIENT; ++i)
+				SetEvent(hRecvAllEvent[i]);
+		}
 		// 모든 클라이언트로부터 Recv()가 확인 될 때까지 대기
 		WaitForMultipleObjects(MAX_CLIENT, hRecvAllEvent, TRUE, INFINITE);
 

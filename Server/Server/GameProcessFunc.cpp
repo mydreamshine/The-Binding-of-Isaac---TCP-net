@@ -2,8 +2,6 @@
 
 ////////////////////////////////////////  Game & Network Valiable  ////////////////////////////////////////
 																										 //
-unsigned int CurClientNum = 0;																			 //
-																										 //
 /*																										 //
 CommunicationBuffer[index] 설명																		     //
 	- index 0 ~ MAX_CLIENT*2-1까지는 Player 오브젝트에 대한 정보										 //
@@ -19,13 +17,36 @@ GameObject 설명																						     //
 */																										 //
 Player * PlayerBuffer[MAX_CLIENT];																		 //
 Boss   * BossObj = NULL;																				 //
-Bullet * BulletBuffer[MAX_OBJECT - MAX_CLIENT - 1]; // Bullet Count: Max_Object - Max_Client - Max_Boss	 //
+Bullet * BulletBuffer[MAX_OBJECT - (MAX_CLIENT*2 + 1)]; // Bullet Count: Max_Object - Max_Client*2 - Max_Boss //
 																										 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void GameProcessFunc::InitGameObject()
 {
+	for (int i = 0; i < MAX_CLIENT; ++i)
+	{
+		if (PlayerBuffer[i] != NULL)
+		{
+			delete PlayerBuffer[i];
+			PlayerBuffer[i] = NULL;
+		}
+	}
+
+	if (BossObj != NULL)
+	{
+		delete BossObj;
+		BossObj = NULL;
+	}
+
+	for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+	{
+		if (BulletBuffer[i] != NULL)
+		{
+			delete BulletBuffer[i];
+			BulletBuffer[i] = NULL;
+		}
+	}
 }
 
 bool GameProcessFunc::CreateNewBoss()
@@ -45,10 +66,6 @@ bool GameProcessFunc::CreateNewBoss()
 
 int GameProcessFunc::CreateNewPlayer()
 {
-	// MAX_CLIENT보다 많은 수의 클라이언트를 수용하지 않음
-	if (CurClientNum == MAX_CLIENT)
-		return -1;
-
 	// 새로운 플레이어 생성
 	int ClientID = -1;
 	// index 0 ~ MAX_CLIENT-1 중 PlayerBuffer[index] == NULL인 index를 ClientID로 사용
@@ -75,9 +92,6 @@ int GameProcessFunc::CreateNewPlayer()
 		PlayerBuffer[ClientID]->SetBodyPosition(newBodyPoint);
 		PlayerBuffer[ClientID]->SetPos_InHeadTexture(newPos_InHeadTexture);
 		PlayerBuffer[ClientID]->SetPos_InBodyTexture(newPos_InBodyTexture);
-
-		// 접속 클라이언트 수 증가
-		++CurClientNum;
 	}
 
 	return ClientID;
@@ -88,28 +102,28 @@ bool GameProcessFunc::RecvInput(SOCKET sock, int ClientID)
 	int retval;
 	// 키 값을 받아옴
 	retval = recvn(sock, (char*)PlayerBuffer[ClientID]->GetKeyBuffer(), sizeof(bool) * 256, 0);
-	if (retval == SOCKET_ERROR)
+	if (retval == SOCKET_ERROR || retval == 0)
 	{
+		delete PlayerBuffer[ClientID];
+		PlayerBuffer[ClientID] = NULL;
 		err_display((char*)"recv()");
 		return false;
 	}
-	else if (retval == 0) // 받은 데이터가 없을 때
-		return false;
 
 	// 키 값을 받아옴
 	retval = recvn(sock, (char*)PlayerBuffer[ClientID]->GetSpecialKeyBuffer(), sizeof(bool) * 246, 0);
-	if (retval == SOCKET_ERROR)
+	if (retval == SOCKET_ERROR || retval == 0)
 	{
+		delete PlayerBuffer[ClientID];
+		PlayerBuffer[ClientID] = NULL;
 		err_display((char*)"recv()");
 		return false;
 	}
-	else if (retval == 0) // 받은 데이터가 없을 때
-		return false;
 
 	return true;
 }
 
-bool GameProcessFunc::SendCommunicationData(SOCKET sock)
+bool GameProcessFunc::SendCommunicationData(SOCKET sock, int ClientID)
 {
 	/*
 		CommunicationBuffer를 MAX_OBJECT씩이나 보내는 이유:
@@ -128,6 +142,8 @@ bool GameProcessFunc::SendCommunicationData(SOCKET sock)
 	int retval = send(sock, (char*)&CommunicationBuffer, sizeof(CommunicationData)*MAX_OBJECT, 0);
 	if (retval == SOCKET_ERROR)
 	{
+		delete PlayerBuffer[ClientID];
+		PlayerBuffer[ClientID] = NULL;
 		err_display((char*)"send()");
 		return false;
 	}

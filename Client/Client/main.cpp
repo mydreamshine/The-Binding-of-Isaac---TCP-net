@@ -94,53 +94,51 @@ DWORD WINAPI CommunicationWithServer(LPVOID arg)
 
 int main(int argc, char **argv)
 {
-	///////////////////////////// Initialize GL things  /////////////////////////////
-	glutInit(&argc, argv);														   //
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);					   //
-	glutInitWindowPosition(0, 0);												   //
-	glutInitWindowSize(WND_WIDTH, WND_HEIGHT);									   //
-	glutCreateWindow("The Binding of Isaac - Client");							   //
-	srand(static_cast <unsigned> (time(0)));									   //
-																				   //
-	glewInit();																	   //
-	if (glewIsSupported("GL_VERSION_3_0"))										   //
-	{																			   //
-		std::cout << " GLEW Version is 3.0\n ";									   //
-	}																			   //
-	else																		   //
-	{																			   //
-		std::cout << "GLEW 3.0 not supported\n ";								   //
-	}																			   //
-																				   //
-	// Initialize Renderer (WndWidth, WndHeight, TranslationScale)				   //
-	g_pScene = new CPlayScene();												   //
-	if (!g_pScene->InitialRenderer(WND_WIDTH, WND_HEIGHT, 100.0f))				   //
-	{																			   //
-		std::cout << "Renderer could not be initialized.. \n";					   //
-		delete g_pScene;														   //
-		return 0;																   //
-	}																			   //
-	// Initialize Object														   //
-	if (!g_pScene->InitialObjects())											   //
-	{																			   //
-		std::cout << "Objects could not be initialized.. \n";					   //
-		delete g_pScene;														   //
-		return 0;																   //
-	}																			   //
-																				   //
-	// Setting GL Callback Function												   //
-	glutDisplayFunc(RenderScene);												   //
-	glutIdleFunc(Idle);															   //
-																				   //
-	glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);										   //
-	glutKeyboardFunc(KeyPressed);												   //
-	glutKeyboardUpFunc(KeyUp);													   //
-	glutSpecialFunc(SpecialKeyPressed);											   //
-	glutSpecialUpFunc(SpecialKeyUp);											   //
-	glutMouseFunc(MouseInput);													   //
-																				   //
-	glutMainLoop();																   //
-	/////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////// Initialize GL things  //////////////////////////////
+	glutInit(&argc, argv);														     //
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);					     //
+	glutInitWindowPosition(0, 0);												     //
+	glutInitWindowSize(WND_WIDTH, WND_HEIGHT);									     //
+	glutCreateWindow("The Binding of Isaac - Client");							     //
+	srand(static_cast <unsigned> (time(0)));									     //
+																				     //
+	glewInit();																	     //
+	if (glewIsSupported("GL_VERSION_3_0"))										     //
+	{																			     //
+		std::cout << " GLEW Version is 3.0\n ";									     //
+	}																			     //
+	else																		     //
+	{																			     //
+		std::cout << "GLEW 3.0 not supported\n ";								     //
+	}																			     //
+																				     //
+	// Initialize Renderer (WndWidth, WndHeight, TranslationScale)				     //
+	g_pScene = new CPlayScene();												     //
+	if (!g_pScene->InitialRenderer(WND_WIDTH, WND_HEIGHT, RENDER_TRANSLATION_SCALE)) //
+	{																			     //
+		std::cout << "Renderer could not be initialized.. \n";					     //
+		delete g_pScene;														     //
+		return 0;																     //
+	}																			     //
+	// Initialize Object														     //
+	if (!g_pScene->InitialObjects())											     //
+	{																			     //
+		std::cout << "Objects could not be initialized.. \n";					     //
+		delete g_pScene;														     //
+		return 0;																     //
+	}																			     //
+																				     //
+	// Setting GL Callback Function												     //
+	glutDisplayFunc(RenderScene);												     //
+	glutIdleFunc(Idle);															     //
+																				     //
+	glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);										     //
+	glutKeyboardFunc(KeyPressed);												     //
+	glutKeyboardUpFunc(KeyUp);													     //
+	glutSpecialFunc(SpecialKeyPressed);											     //
+	glutSpecialUpFunc(SpecialKeyUp);											     //
+	glutMouseFunc(MouseInput);													     //
+	///////////////////////////////////////////////////////////////////////////////////
 
 
 	
@@ -178,7 +176,7 @@ int main(int argc, char **argv)
 	}																								   //
 																									   //
 	// Communication With Server																	   //
-	HANDLE hThread = CreateThread(NULL, 0, CommunicationWithServer, (LPVOID)&sock, 0, NULL);		   //
+	HANDLE hThread = CreateThread(NULL, 0, CommunicationWithServer, (LPVOID)sock, 0, NULL);		       //
 	if (hThread == NULL)																			   //
 	{																								   //
 		closesocket(sock);																			   //
@@ -190,7 +188,10 @@ int main(int argc, char **argv)
 	else CloseHandle(hThread);																		   //
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	glutMainLoop();
+
 	delete g_pScene;
+	g_pScene = NULL;
     return 0;
 }
 

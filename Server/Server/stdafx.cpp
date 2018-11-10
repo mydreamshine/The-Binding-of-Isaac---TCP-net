@@ -32,8 +32,7 @@ void err_display(char* msg)
 		(LPTSTR)&lpMsgBuf, 0, NULL);
 
 	// 오류 메세지 출력
-	//printf_s("[%s] %s", msg, (LPCTSTR)lpMsgBuf);
-	MessageBox(NULL, (LPCTSTR)lpMsgBuf, msg, MB_ICONERROR);
+	printf_s("[%s] %s", msg, (LPCTSTR)lpMsgBuf);
 
 	// 오류 메세지 메모리 해제
 	LocalFree(lpMsgBuf);

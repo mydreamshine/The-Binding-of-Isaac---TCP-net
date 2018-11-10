@@ -14,7 +14,7 @@ struct CommunicationData
 {
 	int   Obj_Type = KIND_NULL;
 	Point Obj_Pos;  // float x, y, z
-	POINT Obj_Pos_InTexture; // LONG x, y
+	POINT Obj_Pos_InTexture = { 0,0 }; // LONG x, y
 };
 
 
@@ -89,9 +89,9 @@ class CPlayScene : public CScene
 private:
 	float              m_TranslationScale = 1.0f;
 	Renderer*          m_pRenderer = nullptr;
-	CommunicationData  m_RenderObjects[MAX_OBJECTS];
+	CommunicationData  m_RenderObjects[MAX_OBJECT];
 	u_int              m_CurrentObjectNum;
-	u_int              m_TextureIDs[MAX_TEXTURE];
+	u_int              m_TextureIDs[MAX_OBJECT_KIND];
 
 public:
 	CPlayScene() = default;

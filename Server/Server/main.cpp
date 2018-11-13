@@ -47,7 +47,8 @@ int main(int argc, char argv[])
 
 	// 게임 Update 스레드 생성
 	HANDLE hThread;
-	hThread = CreateThread(NULL, 0, ProcessGameUpdate, NULL, 0, NULL);
+	DWORD UpdateThreadID;
+	hThread = CreateThread(NULL, 0, ProcessGameUpdate, NULL, 0, &UpdateThreadID);
 	if (hThread == NULL)
 		err_quit((char*)"CreateThread()");
 	else CloseHandle(hThread);
@@ -74,6 +75,8 @@ int main(int argc, char argv[])
 		}
 		cout << "[TCP 서버] 클라이언트 접속: IP 주소=" << inet_ntoa(clientaddr.sin_addr) << ", 포트번호=" << ntohs(clientaddr.sin_port) << endl;
 
+		// ProcessGameUpdate 스레드에게 새로운 클라이언트가 접속했다는 것을 알린다.
+		PostThreadMessage(UpdateThreadID, WM_USER, 0, 0);
 		// 클라이언트와의 데이터 통신
 		hThread = CreateThread(NULL, 0, ProcessClient, (LPVOID)client_sock, 0, NULL);
 		if (hThread == NULL)

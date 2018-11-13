@@ -97,6 +97,17 @@ int GameProcessFunc::CreateNewPlayer()
 	return ClientID;
 }
 
+int GameProcessFunc::FindNullPlayerIndex(int indexArray[])
+{
+	int k = 0;
+	for (int i = 0; i < MAX_CLIENT; ++i)
+	{
+		if (PlayerBuffer[i] == NULL)
+			indexArray[k++] = i;
+	}
+	return k;
+}
+
 bool GameProcessFunc::RecvInput(SOCKET sock, int ClientID)
 {
 	int retval;

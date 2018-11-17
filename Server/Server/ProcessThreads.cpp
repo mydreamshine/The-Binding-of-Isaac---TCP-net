@@ -140,6 +140,7 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 			if (GameStart)
 			{
 				GameProcessFunc::InitGameObject();
+				GameProcessFunc::CreateNewBoss();
 				GameStart = false;
 			}
 			for (int i = 0; i < MAX_CLIENT; ++i)
@@ -164,6 +165,7 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 		// 게임 오브젝트 Update
 		GameProcessFunc::ProcessInput(ElapsedTime);
 		GameProcessFunc::ProcessPhisics(ElapsedTime);
+		GameProcessFunc::BossPattern(ElapsedTime);
 		GameProcessFunc::ProcessCollision(ElapsedTime);
 
 		// 게임 오브젝트의 정보를 통신 오브젝트에 반영

@@ -42,9 +42,10 @@ void Player::Update(float ElapsedTime)
 
 	// Calculation Position
 	// 새로운 위치 = 이전 위치 + 속도 * 시간
-	m_HeadPosition += m_Velocity * ElapsedTime;
+	//m_HeadPosition += m_Velocity * ElapsedTime;
 	m_BodyPosition += m_Velocity * ElapsedTime;
-
+	Point amount = { 0.041f, 0.209f, 0 };
+	m_HeadPosition = m_BodyPosition + amount;
 	// Animation Frame Update
 	// ...
 }
@@ -129,6 +130,7 @@ Bullet::Bullet()
 	m_Mass = 0.0f;
 	m_FrictionFactor = 0.0f;
 	m_Damage = 0;
+	m_ReflectCnt = 0;
 }
 
 void Bullet::Update(float ElapsedTime)

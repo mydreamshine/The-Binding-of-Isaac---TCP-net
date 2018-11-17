@@ -19,5 +19,10 @@ namespace GameProcessFunc
 	bool RecvInput(SOCKET sock, int ClientID);
 	bool SendCommunicationData(SOCKET sock, int ClientID);
 	void ResetCommunicationBuffer();
+
+	void BossPattern(float ElapsedTime);
+	void BossJump(float ElapsedTime);
+	void BossHighJump(float ElapsedTime);
+	void BossShoot(float ElapsedTime);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////

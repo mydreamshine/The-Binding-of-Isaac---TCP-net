@@ -25,9 +25,7 @@ bool CPlayScene::InitialRenderer(int windowSizeX, int windowSizeY, float Transla
 	m_TextureIDs[KIND_BULLET_1] = m_pRenderer->CreatePngTexture("./Resource/Graphic/Tear.png");
 	m_TextureIDs[KIND_BULLET_2] = m_pRenderer->CreatePngTexture("./Resource/Graphic/Blood_Tear.png");
 	m_TextureIDs[KIND_BACKGROND] = m_pRenderer->CreatePngTexture("./Resource/Graphic/Background.png");
-	/*
-	m_TextureIDs[KIND_BOSS] = m_pRenderer->CreatePngTexture("");
-	*/
+	m_TextureIDs[KIND_BOSS] = m_pRenderer->CreatePngTexture("./Resource/Graphic/Boss.png");
 
 	return m_pRenderer->IsInitialized();
 }
@@ -80,27 +78,54 @@ void CPlayScene::RendrScene()
 			// Obj_Type에 따른 렌더링
 			Pos = m_RenderObjects[i].Obj_Pos;
 			Pos_InTexture = m_RenderObjects[i].Obj_Pos_InTexture;
-			Size.Width = PLAYER_WIDTH / 2;
-			Size.Height = PLAYER_HEIGHT / 2;
+
+			switch (m_RenderObjects[i].Obj_Type)
+			{
+			case KIND_PLAYER_HEAD:
+				Size.Width = PLAYER_WIDTH / 2;
+				Size.Height = PLAYER_HEIGHT / 2;
+				TextureID = m_TextureIDs[KIND_PLAYER_HEAD];
+				Animation_Sequence_X = MAX_PLAYER_HEAD_ANIMATION_SEQUENCE_X;
+				Animation_Sequence_Y = MAX_PLAYER_HEAD_ANIMATION_SEQUENCE_Y;
+				break;
+			case KIND_PLAYER_BODY:
+				Size.Width = PLAYER_WIDTH / 2;
+				Size.Height = PLAYER_HEIGHT / 2;
+				TextureID = m_TextureIDs[KIND_PLAYER_BODY];
+				Animation_Sequence_X = MAX_PLAYER_BODY_ANIMATION_SEQUENCE_X;
+				Animation_Sequence_Y = MAX_PLAYER_BODY_ANIMATION_SEQUENCE_Y;
+				break;
+			case KIND_BOSS:
+				Size.Width = BOSS_WIDTH;
+				Size.Height = BOSS_HEIGHT;
+				TextureID = m_TextureIDs[KIND_BOSS];
+				Animation_Sequence_X = MAX_BOSS_ANIMATION_SEQUENCE_X;
+				Animation_Sequence_Y = MAX_BOSS_ANIMATION_SEQUENCE_Y;
+				break;
+			case KIND_BULLET_1:
+				Size.Width = BULLET_WIDTH;
+				Size.Height = BULLET_HEIGHT;
+				TextureID = m_TextureIDs[KIND_BULLET_1];
+				Animation_Sequence_X = 1;
+				Animation_Sequence_Y = 1;
+				break;
+			case KIND_BULLET_2:
+				Size.Width = BULLET_WIDTH;
+				Size.Height = BULLET_HEIGHT;
+				TextureID = m_TextureIDs[KIND_BULLET_2];
+				Animation_Sequence_X = 1;
+				Animation_Sequence_Y = 1;
+				break;
+			default:
+				break;
+			}
 
 			// 월드 좌표계로 변환
 			Pos *= m_TranslationScale;
 			Size.Width *= m_TranslationScale;
 			Size.Height *= m_TranslationScale;
 
-			if (m_RenderObjects[i].Obj_Type == KIND_PLAYER_HEAD)
-			{
-				TextureID = m_TextureIDs[KIND_PLAYER_HEAD];
-				Animation_Sequence_X = MAX_PLAYER_HEAD_ANIMATION_SEQUENCE_X;
-				Animation_Sequence_Y = MAX_PLAYER_HEAD_ANIMATION_SEQUENCE_Y;
-			}
-			else if (m_RenderObjects[i].Obj_Type == KIND_BULLET_1)
-			{
-				TextureID = m_TextureIDs[KIND_BULLET_1];
-				Animation_Sequence_X = 1;
-				Animation_Sequence_Y = 1;
-			}
-			m_pRenderer->DrawTextureRectSeqXY
+			m_pRenderer->DrawTextureRectHeightSeqXY
 			(
 				Pos.x, Pos.y, Pos.z, // Position In World Coordination
 				Size.Width, Size.Height, // Size In World Coordination
@@ -173,4 +198,3 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 	closesocket(server_sock);
 	exit(1);
 }
-

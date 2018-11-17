@@ -40,6 +40,8 @@ private:
 
 	POINT  m_Pos_InHeadTexture;
 	POINT  m_Pos_InBodyTexture;
+	POINT  m_SeqBody = { 0,0 };
+	POINT  m_SeqHead = { 0,0 };
 
 	bool   m_KeyState[256];
 	bool   m_SpecialKeyState[246];
@@ -53,6 +55,8 @@ public:
 	void SetVelocity(Vector nweVelocity)      { m_Velocity = nweVelocity; }
 	void SetPos_InHeadTexture(POINT newPoint) { m_Pos_InHeadTexture = newPoint; }
 	void SetPos_InBodyTexture(POINT newPoint) { m_Pos_InBodyTexture = newPoint; }
+	void SetSeqBody(POINT newSeq) { m_SeqBody = newSeq; }
+	void SetSeqHead(POINT newSeq) { m_SeqHead = newSeq; }
 
 	u_int  GetHP()                            { return m_HP; }
 	Point  GetHeadPosition()                  { return m_HeadPosition; }
@@ -61,6 +65,8 @@ public:
 	POINT  GetPos_InHeadTexture()             { return m_Pos_InHeadTexture; }
 	POINT  GetPos_InBodyTexture()             { return m_Pos_InBodyTexture; }
 
+	POINT GetSeqBody()						  { return m_SeqBody; }
+	POINT GetSeqHead()						  { return m_SeqHead; }
 	bool * GetKeyBuffer()                     { return m_KeyState; }
 	bool * GetSpecialKeyBuffer()              { return m_SpecialKeyState; }
 
@@ -83,19 +89,26 @@ private:
 
 	POINT  m_Pos_InTexture;
 
+	short  m_Pattern;
+	float  m_Etime;
+
 public:
 	Boss();
 	~Boss() = default;
 
-	void SetHP(u_int newHP)               { m_HP = newHP; }
-	void SetPosition(Point newPoint)      { m_Position = newPoint; }
-	void SetVelocity(Vector nweVelocity)  { m_Velocity = nweVelocity; }
+	void SetHP(u_int newHP) { m_HP = newHP; }
+	void SetPosition(Point newPoint) { m_Position = newPoint; }
+	void SetVelocity(Vector nweVelocity) { m_Velocity = nweVelocity; }
 	void SetPos_InTexture(POINT newPoint) { m_Pos_InTexture = newPoint; }
+	void SetPattern(short pattern) { m_Pattern = pattern; }
+	void SetEtime(float Etime) { m_Etime = Etime; }
 
-	u_int  GetHP()                        { return m_HP; }
-	Point  GetPosition()                  { return m_Position; }
-	Vector GetVelocity()                  { return m_Velocity; }
-	POINT  GetPos_InTexture()             { return m_Pos_InTexture; }
+	u_int  GetHP() { return m_HP; }
+	Point  GetPosition() { return m_Position; }
+	Vector GetVelocity() { return m_Velocity; }
+	POINT  GetPos_InTexture() { return m_Pos_InTexture; }
+	short  GetPattern() { return m_Pattern; }
+	float  GetEtime() { return m_Etime; }
 
 	void Update(float ElapsedTime);
 	void ApplyForce(Vector Force, float ElapsedTime);
@@ -118,6 +131,8 @@ private:
 	float  m_FrictionFactor;
 	u_int  m_Damage;
 
+	u_short m_ReflectCnt;
+
 public:
 	Bullet();
 	~Bullet() = default;
@@ -128,13 +143,15 @@ public:
 	void SetMass(float newMass)                     { m_Mass = newMass; }
 	void SetFrictionFactor(float newFrictionFactor) { m_FrictionFactor = newFrictionFactor; }
 	void SetDamage(u_int newDamage)                 { m_Damage = newDamage; }
+	void SetReflectCnt(u_short newReflectCnt)       { m_ReflectCnt = newReflectCnt; }
 
-	bool   GetPossesion()                           { return m_Possesion; }
-	Point  GetPosition()                            { return m_Position; }
-	Vector GetVelocity()                            { return m_Velocity; }
-	float  GetMass()                                { return m_Mass; }
-	float  GetFrictionFactor()                      { return m_FrictionFactor; }
-	u_int  GetDamage()                              { return m_Damage; }
+	bool    GetPossesion()                          { return m_Possesion; }
+	Point   GetPosition()                           { return m_Position; }
+	Vector  GetVelocity()                           { return m_Velocity; }
+	float   GetMass()                               { return m_Mass; }
+	float   GetFrictionFactor()                     { return m_FrictionFactor; }
+	u_int   GetDamage()                             { return m_Damage; }
+	u_short GetReflectCnt()							{ return m_ReflectCnt; }
 
 	void Update(float ElapsedTime);
 };

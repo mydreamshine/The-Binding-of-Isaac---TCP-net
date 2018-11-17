@@ -18,26 +18,27 @@
 #define BOSS_INIT_HP 100
 #define PLAYER_BULLET_DAMAGE 1
 #define BOSS_BULLET_DAMAGE 1
+#define MAX_BULLET_REFLECT_COUNT 3
 
 
 
 // Object IDs
-#define PLAYER_HEAD_ID1 0 // 0~1 : Player1
-#define PLAYER_BODY_ID1 1
-#define PLAYER_HEAD_ID2 2 // 2~3 : Player2
-#define PLAYER_BODY_ID2 3
-#define PLAYER_HEAD_ID3 4 // 4~5 : Player3
-#define PLAYER_BODY_ID3 5
-#define PLAYER_HEAD_ID4 6 // 6~7 : Player4
-#define PLAYER_BODY_ID4 7
+#define PLAYER_HEAD_ID1 1 // 0~1 : Player1
+#define PLAYER_BODY_ID1 0
+#define PLAYER_HEAD_ID2 3 // 2~3 : Player2
+#define PLAYER_BODY_ID2 2
+#define PLAYER_HEAD_ID3 5 // 4~5 : Player3
+#define PLAYER_BODY_ID3 4
+#define PLAYER_HEAD_ID4 7 // 6~7 : Player4
+#define PLAYER_BODY_ID4 6
 #define BOSS_ID         2 * MAX_CLIENT
 
-
+ 
 // Object Kind
 #define MAX_OBJECT_KIND 6
 #define KIND_NULL       -1
-#define KIND_PLAYER_HEAD 0 // Down/Right/Up/Left Sequence Each Two-Frame (In Sprite of One-Row)
-#define KIND_PLAYER_BODY 1 // Up-Down//Left-Right Sequence Each Ten-Frame (In Sprite of Three-Row)
+#define KIND_PLAYER_HEAD 1 // Down/Right/Up/Left Sequence Each Two-Frame (In Sprite of One-Row)
+#define KIND_PLAYER_BODY 0 // Up-Down//Left-Right Sequence Each Ten-Frame (In Sprite of Three-Row)
 #define KIND_BOSS        2
 #define KIND_BULLET_1    3 // Normal Tear
 #define KIND_BULLET_2    4 // Blood Tear
@@ -50,19 +51,27 @@
 #define MAX_PLAYER_HEAD_ANIMATION_SEQUENCE_Y 1
 #define MAX_PLAYER_BODY_ANIMATION_SEQUENCE_X 10
 #define MAX_PLAYER_BODY_ANIMATION_SEQUENCE_Y 3
+#define MAX_BOSS_ANIMATION_SEQUENCE_X 9
+#define MAX_BOSS_ANIMATION_SEQUENCE_Y 1
 #define PLAYER_WIDTH  1.0f
 #define PLAYER_HEIGHT 1.0f
 #define BULLET_WIDTH  0.3f
 #define BULLET_HEIGHT 0.3f
+#define BOSS_WIDTH    2.0f
+#define BOSS_HEIGHT   2.0f
 
 
 // Phisical Option
 #define GravityAccelarationFactor   9.80665f
+#define BACKGROUND_UP_MARGINE       110.0f
+#define BACKGROUND_DOWN_MARGINE     110.0f
+#define BACKGROUND_LEFT_MARGINE     110.0f
+#define BACKGROUND_RIGHT_MARGINE    110.0f
 #define PLAYER_SPEED                1.0f
 #define PLAYER_MASS                 0.1f
 #define PLAYER_FRICTION_FACTOR      0.5f
-#define PLAYER_BOUNDINGBOX_WIDTH    
-#define PLAYER_BOUNDINGBOX_HEIGHT   
+#define PLAYER_BOUNDINGBOX_WIDTH    1.0f
+#define PLAYER_BOUNDINGBOX_HEIGHT   1.0f
 #define BOSS_SPEED                  1.0f
 #define BOSS_MASS                   0.1f
 #define BOSS_FRICTION_FACTOR        0.5f

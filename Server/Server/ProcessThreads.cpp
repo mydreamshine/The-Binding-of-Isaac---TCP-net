@@ -159,17 +159,27 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 		// 모든 클라이언트로부터 Recv()가 확인 될 때까지 대기
 		WaitForMultipleObjects(MAX_CLIENT, hRecvAllEvent, TRUE, INFINITE);
 
-		// ElapsedTime 계산(계산 수정요)
-		float ElapsedTime = 1.0f / 60;
+		// ElapsedTime 계산
+		static DWORD g_PrevRenderTime = 0;
+		static DWORD cur_Time = 0;
+		static float eTime = 0.0f;
+
+		if (g_PrevRenderTime == 0)
+			g_PrevRenderTime = timeGetTime();
+		cur_Time = timeGetTime();
+
+		eTime = (float)(cur_Time - g_PrevRenderTime) / 1000.0f;
+		g_PrevRenderTime = cur_Time;
+
 
 		// 게임 오브젝트 Update
-		GameProcessFunc::ProcessInput(ElapsedTime);
-		GameProcessFunc::ProcessPhisics(ElapsedTime);
-		GameProcessFunc::BossPattern(ElapsedTime);
-		GameProcessFunc::ProcessCollision(ElapsedTime);
+		GameProcessFunc::ProcessInput(eTime);
+		GameProcessFunc::ProcessPhisics(eTime);
+		GameProcessFunc::BossPattern(eTime);
+		GameProcessFunc::ProcessCollision(eTime);
 
 		// 게임 오브젝트의 정보를 통신 오브젝트에 반영
-		GameProcessFunc::ResetCommunicationBuffer();
+		GameProcessFunc::ResetCommunicationBuffer();s
 
 		// 모든 오브젝트의 업데이트가 끝남을 알림
 		// hUpdateEvent를 클라이언트 개수만큼 신호상태로 한 이유:

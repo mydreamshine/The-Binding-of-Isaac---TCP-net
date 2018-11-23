@@ -20,9 +20,10 @@ class Bullet;
 
 struct CommunicationData
 {
-	int   Obj_Type = KIND_NULL;
-	Point Obj_Pos;  // float x, y, z
-	POINT Obj_Pos_InTexture; // LONG x, y
+	int    Obj_Type = KIND_NULL;
+	Point  Obj_Pos;  // float x, y, z
+	POINT  Obj_Pos_InTexture; // LONG x, y
+	Vector Obj_Velocity;
 };
 
 

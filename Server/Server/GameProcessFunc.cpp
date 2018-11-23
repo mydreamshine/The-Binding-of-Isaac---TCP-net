@@ -289,17 +289,6 @@ void GameProcessFunc::ProcessInput(float ElapsedTime)
 				BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_RIGHT);
 			}
 		}
-		/* 추가 시, 버그 발생
-		// 키 값이 없으면 기본 동작으로 돌아감
-		if (PlayerBuffer[i] == NULL)
-		{
-			seq = PlayerBuffer[i]->GetSeq();
-			if (seq.y = 0) seq.x = 0;
-			if (seq.y = 1) seq.x = 9;
-			if (seq.y = 2) seq.x = 0;
-			PlayerBuffer[i]->SetSeq(seq);
-			PlayerBuffer[i]->SetPos_InBodyTexture(seq);
-		}*/
 	}
 }
 
@@ -433,7 +422,7 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 
 void GameProcessFunc::BulletShoot(bool Possesion, Point Pos, Vector Velocity, unsigned int shootID)
 {
-	if (shootID == SHOOT_NONE || shootID == SHOOT_PATTERN_NONE)
+	if (shootID == SHOOT_NONE)
 		return;
 
 	Point newPoint = Pos;
@@ -527,9 +516,11 @@ void GameProcessFunc::ResetCommunicationBuffer()
 			CommunicationBuffer[i * 2].Obj_Type = KIND_PLAYER_BODY;
 			CommunicationBuffer[i * 2].Obj_Pos = PlayerBuffer[i]->GetBodyPosition();
 			CommunicationBuffer[i * 2].Obj_Pos_InTexture = PlayerBuffer[i]->GetPos_InBodyTexture();
-			CommunicationBuffer[i * 2+1].Obj_Type = KIND_PLAYER_HEAD;
-			CommunicationBuffer[i * 2+1].Obj_Pos = PlayerBuffer[i]->GetHeadPosition();
-			CommunicationBuffer[i * 2+1].Obj_Pos_InTexture = PlayerBuffer[i]->GetPos_InHeadTexture();
+			CommunicationBuffer[i * 2].Obj_Velocity = PlayerBuffer[i]->GetVelocity();
+			CommunicationBuffer[i * 2 + 1].Obj_Type = KIND_PLAYER_HEAD;
+			CommunicationBuffer[i * 2 + 1].Obj_Pos = PlayerBuffer[i]->GetHeadPosition();
+			CommunicationBuffer[i * 2 + 1].Obj_Pos_InTexture = PlayerBuffer[i]->GetPos_InHeadTexture();
+			CommunicationBuffer[i * 2 + 1].Obj_Velocity = PlayerBuffer[i]->GetVelocity();
 		}
 		else
 		{
@@ -542,6 +533,7 @@ void GameProcessFunc::ResetCommunicationBuffer()
 		CommunicationBuffer[MAX_CLIENT * 2].Obj_Type = KIND_BOSS;
 		CommunicationBuffer[MAX_CLIENT * 2].Obj_Pos = BossObj->GetPosition();
 		CommunicationBuffer[MAX_CLIENT * 2].Obj_Pos_InTexture = BossObj->GetPos_InTexture();
+		CommunicationBuffer[MAX_CLIENT * 2].Obj_Velocity = BossObj->GetVelocity();
 	}
 	else
 		CommunicationBuffer[MAX_CLIENT * 2].Obj_Type = KIND_NULL;
@@ -552,6 +544,7 @@ void GameProcessFunc::ResetCommunicationBuffer()
 		{
 			CommunicationBuffer[MAX_CLIENT * 2 + 1 + i].Obj_Type = BulletBuffer[i]->GetPossesion() ? KIND_BULLET_1 : KIND_BULLET_2;
 			CommunicationBuffer[MAX_CLIENT * 2 + 1 + i].Obj_Pos = BulletBuffer[i]->GetPosition();
+			CommunicationBuffer[MAX_CLIENT * 2 + 1 + i].Obj_Velocity = BulletBuffer[i]->GetVelocity();
 			CommunicationBuffer[MAX_CLIENT * 2 + 1 + i].Obj_Pos_InTexture = { 1,1 };
 		}
 		else
@@ -591,23 +584,23 @@ void GameProcessFunc::BossJump(float ElapsedTime)
 
 	if (total_eTime >= 0.f && total_eTime < 0.5f) {
 		BossObj->SetPos_InTexture(POINT{ 1,1 });
-		ps.y = -amount * ((total_eTime * total_eTime) - total_eTime + 0.25f) + 2;
-		if (ps.y < 0)
-			ps.y = 0;
+		ps.z = -amount * ((total_eTime * total_eTime) - total_eTime + 0.25f) + 2;
+		if (ps.z < 0)
+			ps.z = 0;
 	}
 	else if (total_eTime >= 0.5f && total_eTime < 1.0f) {
 		BossObj->SetPos_InTexture(POINT{ 2,1 });
-		ps.y = 2;
+		ps.z = 2;
 	}
 	else if (total_eTime >= 1.0f && total_eTime < 1.5f) {
 		BossObj->SetPos_InTexture(POINT{ 1,1 });
-		ps.y = -amount * (((total_eTime - 0.5f) * (total_eTime - 0.5f)) - (total_eTime - 0.5f) + 0.25f) + 2;
-		if (ps.y < 0)
-			ps.y = 0;
+		ps.z = -amount * (((total_eTime - 0.5f) * (total_eTime - 0.5f)) - (total_eTime - 0.5f) + 0.25f) + 2;
+		if (ps.z < 0)
+			ps.z = 0;
 	}
 	else if (total_eTime >= 1.5f && total_eTime < 2.0f) {
 		BossObj->SetPos_InTexture(POINT{ 2,0 });
-		ps.y = 0;
+		ps.z = 0;
 	}
 	else {
 		total_eTime = 0;
@@ -634,13 +627,13 @@ void GameProcessFunc::BossHighJump(float ElapsedTime)
 
 	if (total_eTime >= 0.f && total_eTime < 1.5f) {
 		BossObj->SetPos_InTexture(POINT{ 4,0 });
-		ps.y = -amount * (total_eTime * (total_eTime - 1.5f));
-		if (ps.y < 0)
-			ps.y = 0;
+		ps.z = -amount * (total_eTime * (total_eTime - 1.5f));
+		if (ps.z < 0)
+			ps.z = 0;
 	}
 	else if (total_eTime >= 1.5f && total_eTime < 2.0f) {
 		BossObj->SetPos_InTexture(POINT{ 1,1 });
-		ps.y = 0;
+		ps.z = 0;
 	}
 	else {
 		BossObj->SetPos_InTexture(POINT{ 1,1 });

@@ -1,8 +1,14 @@
 #include "stdafx.h"
 #include "CScene.h"
+#include <thread>
 
-HANDLE hWriteEvent;
+using namespace std;
+
 HANDLE hReadEvent;
+HANDLE hWriteEvent;
+bool   bRecvComplete = false;
+
+CommunicationData CommuncationBuffer[MAX_OBJECT];
 
 CPlayScene::~CPlayScene()
 {
@@ -10,8 +16,8 @@ CPlayScene::~CPlayScene()
 		m_pRenderer->DeleteTexture(m_TextureIDs[i]);
 	if (m_pRenderer) delete m_pRenderer;
 
-	CloseHandle(hWriteEvent);
 	CloseHandle(hReadEvent);
+	CloseHandle(hWriteEvent);
 }
 
 bool CPlayScene::InitialRenderer(int windowSizeX, int windowSizeY, float TranslationScale)
@@ -32,8 +38,8 @@ bool CPlayScene::InitialRenderer(int windowSizeX, int windowSizeY, float Transla
 
 bool CPlayScene::InitialObjects()
 {
-	hWriteEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
-	hReadEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	hReadEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
+	hWriteEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	return true;
 }
 
@@ -58,19 +64,68 @@ void CPlayScene::SpecialKeyUp(int key, int x, int y)
 	m_SpecialKeyState[key] = false;
 }
 
+void CPlayScene::UpdateScene(float elapsedTime)
+{
+	for (u_int i = 0; i < MAX_OBJECT; ++i)
+	{
+		if (m_RenderObjects[i].Obj_Type != KIND_NULL)
+		{
+			if (!equal(m_RenderObjects[i].Obj_Velocity.magnitude(), 0.0f))
+			{
+				// 중력(Gravity) = mg (g: 중력가속도(9.8m/s²)
+				Vector Gravity = Vector(1.0f, 1.0f, 1.0f) * PLAYER_MASS * GravityAccelarationFactor;
+
+				// 마찰력(Friction) = uN (u: 마찰계수, N: 수직항력(-mg))
+				Vector NormalForce = -Gravity;
+				Vector Friction = PLAYER_FRICTION_FACTOR * NormalForce;
+				Vector Direction = unit(m_RenderObjects[i].Obj_Velocity);
+				Friction.i *= Direction.i;
+				Friction.j *= Direction.j;
+				Friction.k *= Direction.k;
+
+				// 외력(ExternalForce)
+				Vector ExternalForce = /*Gravity + */Friction;
+
+				//CGameObject::ApplyForce(ExternalForce, elapsedTime);
+
+				 // Calculate Acceleration
+				Vector Acceleration = ExternalForce / PLAYER_MASS;
+				Vector AfterVelocity = m_RenderObjects[i].Obj_Velocity + Acceleration * elapsedTime;
+
+				if (cosine(AfterVelocity, m_RenderObjects[i].Obj_Velocity) < 0.0f) // 두 벡터 사잇각이 둔각일 경우 = 벡터의 성분(x,y,z)중 부호가 다른 성분이 1개 이상 존재.
+					m_RenderObjects[i].Obj_Velocity = { 0.0f, 0.0f, 0.0f };
+				else
+					m_RenderObjects[i].Obj_Velocity = AfterVelocity;
+			}
+
+			// Calculation Position
+			// 새로운 위치 = 이전 위치 + 속도 * 시간
+			//m_HeadPosition += m_Velocity * ElapsedTime;
+			m_RenderObjects[i].Obj_Pos += m_RenderObjects[i].Obj_Velocity * elapsedTime;
+		}
+	}
+}
+
 void CPlayScene::RendrScene()
 {
 	// Draw Background
 	m_pRenderer->DrawTextureRect(0.0f, 0.0f, 0.0f, WND_WIDTH, WND_HEIGHT, 1.0f, 1.0f, 1.0f, 1.0f, m_TextureIDs[KIND_BACKGROND]);
 
-	// RenderObject의 쓰기 이벤트를 대기
-	WaitForSingleObject(hWriteEvent, INFINITE);
 	Point Pos;
 	POINT Pos_InTexture;
 	fSIZE Size;
 	int TextureID = 0;
 	int Animation_Sequence_X = 1;
 	int Animation_Sequence_Y = 1;
+
+	// Recv가 되었는지 확인 후 
+	if (bRecvComplete)
+	{
+		// m_RenderObject로 CommunicationData가 Copy완료될 때까지 대기
+		WaitForSingleObject(hWriteEvent, INFINITE);
+		bRecvComplete = false;
+	}
+
 	for (u_int i = 0; i < MAX_OBJECT; ++i)
 	{
 		if (m_RenderObjects[i].Obj_Type != KIND_NULL)
@@ -141,11 +196,29 @@ void CPlayScene::RendrScene()
 
 void CPlayScene::CommunicationWithServer(LPVOID arg)
 {
-	int retval;
-	SOCKET server_sock = (SOCKET)arg;
-	SOCKADDR_IN serveraddr;
-	int addrlen = sizeof(serveraddr);
-	getpeername(server_sock, (SOCKADDR*)&serveraddr, &addrlen);
+	//////////////////////////////////////// Initialize Winsock  ////////////////////////////////////////
+	int retval;																						   //
+	WSADATA wsa;																					   //
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)														   //
+		return;																					       //
+																									   //
+	// Create Socket																				   //
+	SOCKET server_sock = socket(AF_INET, SOCK_STREAM, 0);											   //
+	if (server_sock == INVALID_SOCKET)																   //
+		err_quit((char*)"socket()");																   //
+																									   //
+	// Setting Socket(Protocol, IPv4, PortNum) <- Server Information								   //
+	SOCKADDR_IN serveraddr;																			   //
+	ZeroMemory(&serveraddr, sizeof(serveraddr));													   //
+																									   //
+	serveraddr.sin_family = AF_INET;																   //
+	serveraddr.sin_addr.s_addr = inet_addr(SERVER_ADDR);											   //
+	serveraddr.sin_port = htons(SERVER_PORT);														   //
+																									   //
+	retval = connect(server_sock, (SOCKADDR*)&serveraddr, sizeof(serveraddr));						   //
+	if (retval == SOCKET_ERROR)																		   //
+		err_quit((char*)"connect()");																   //
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	WaitForSingleObject(hReadEvent, INFINITE);
 	// recv(m_RenderObjects)
@@ -153,10 +226,10 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 	if (retval == SOCKET_ERROR || retval == 0)
 	{
 		closesocket(server_sock);
-		std::cout
+		cout
 			<< "[TCP 클라이언트] 서버 종료: IP 주소=" << inet_ntoa(serveraddr.sin_addr)
 			<< ", 포트번호=" << ntohs(serveraddr.sin_port)
-			<< std::endl;
+			<< endl;
 		err_display((char*)"recv()");
 	}
 	SetEvent(hWriteEvent);
@@ -178,23 +251,38 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 			break;
 		}
 
-		WaitForSingleObject(hReadEvent, INFINITE);
 		// recv(m_RenderObjects)
-		retval = recv(server_sock, (char*)m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, 0);
-		if (retval == SOCKET_ERROR)
+		retval = recv(server_sock, (char*)CommuncationBuffer, sizeof(CommunicationData)*MAX_OBJECT, 0);
+		if (retval == SOCKET_ERROR || retval == 0)
 		{
 			err_display((char*)"recv()");
 			break;
 		}
-		else if (retval == 0) // 받은 데이터가 없을 때
-			break;
+		WaitForSingleObject(hReadEvent, INFINITE);
+
+		// 데이터 보간
+		for (int i = 0; i < MAX_OBJECT; ++i)
+		{
+			if (CommuncationBuffer[i].Obj_Type != KIND_NULL)
+			{
+				Point subPos = CommuncationBuffer[i].Obj_Pos - m_RenderObjects[i].Obj_Pos;
+				//cout << "sub Pos: (" << subPos.x << "," << subPos.y << ")" << endl;
+				m_RenderObjects[i].Obj_Type = CommuncationBuffer[i].Obj_Type;
+				m_RenderObjects[i].Obj_Pos += (CommuncationBuffer[i].Obj_Pos - m_RenderObjects[i].Obj_Pos)*0.3f;
+				//m_RenderObjects[i].Obj_Velocity += (CommuncationBuffer[i].Obj_Velocity - m_RenderObjects[i].Obj_Velocity)*0.5;
+				m_RenderObjects[i].Obj_Pos_InTexture = CommuncationBuffer[i].Obj_Pos_InTexture;
+			}
+		}
+		memcpy_s(m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, CommuncationBuffer, sizeof(CommunicationData)*MAX_OBJECT);
+		bRecvComplete = true;
 		SetEvent(hWriteEvent);
+		this_thread::sleep_for(50ms);
 	}
 
-	std::cout
+	cout
 		<< "[TCP 클라이언트] 서버 종료: IP 주소=" << inet_ntoa(serveraddr.sin_addr)
 		<< ", 포트번호=" << ntohs(serveraddr.sin_port)
-		<< std::endl;
+		<< endl;
 	closesocket(server_sock);
 	exit(1);
 }

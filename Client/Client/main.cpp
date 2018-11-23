@@ -83,8 +83,6 @@ void SpecialKeyUp(int key, int x, int y)
 	g_pScene->SpecialKeyUp(key, x, y);
 }
 
-#define SERVER_ADDR "127.0.0.1"
-#define SERVER_PORT 9000
 DWORD WINAPI CommunicationWithServer(LPVOID arg)
 {
 	if(g_pScene) g_pScene->CommunicationWithServer(arg);
@@ -140,53 +138,9 @@ int main(int argc, char **argv)
 	glutMouseFunc(MouseInput);													     //
 	///////////////////////////////////////////////////////////////////////////////////
 
-
-	
-
-	//////////////////////////////////////// Initialize Winsock  ////////////////////////////////////////
-	int retval;																						   //
-	WSADATA wsa;																					   //
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)														   //
-	{																								   //
-		delete g_pScene;																			   //
-		return 1;																					   //
-	}																								   //
-																									   //
-	// Create Socket																				   //
-	SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);													   //
-	if (sock == INVALID_SOCKET)																		   //
-	{																								   //
-		delete g_pScene;																			   //
-		err_quit((char*)"socket()");																   //
-	}																								   //
-																									   //
-	// Setting Socket(Protocol, IPv4, PortNum) <- Server Information								   //
-	SOCKADDR_IN serveraddr;																			   //
-	ZeroMemory(&serveraddr, sizeof(serveraddr));													   //
-																									   //
-	serveraddr.sin_family = AF_INET;																   //
-	serveraddr.sin_addr.s_addr = inet_addr(SERVER_ADDR);											   //
-	serveraddr.sin_port = htons(SERVER_PORT);														   //
-																									   //
-	retval = connect(sock, (SOCKADDR*)&serveraddr, sizeof(serveraddr));								   //
-	if (retval == SOCKET_ERROR)																		   //
-	{																								   //
-		delete g_pScene;																			   //
-		err_quit((char*)"connect()");																   //
-	}																								   //
-																									   //
-	// Communication With Server																	   //
-	HANDLE hThread = CreateThread(NULL, 0, CommunicationWithServer, (LPVOID)sock, 0, NULL);		       //
-	if (hThread == NULL)																			   //
-	{																								   //
-		closesocket(sock);																			   //
-		std::cout																					   //
-			<< "[TCP 클라이언트] 서버 종료: IP 주소=" << inet_ntoa(serveraddr.sin_addr)				   //
-			<< ", 포트번호=" << ntohs(serveraddr.sin_port)											   //
-			<< std::endl;																			   //
-	}																								   //
-	else CloseHandle(hThread);																		   //
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Create Thread(CommunicationWithServer)
+	HANDLE hThread = CreateThread(NULL, 0, CommunicationWithServer, NULL, 0, NULL);
+	if (hThread != NULL) CloseHandle(hThread);
 
 	glutMainLoop();
 

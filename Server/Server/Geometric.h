@@ -80,10 +80,9 @@ class Point
 {
 public:
 	float x, y, z;
-
-	~Point() {}
 	Point(float x = 0.0f, float y = 0.0f, float z = 0.0f) : x(x), y(y), z(z) {}
 	Point(Vector v) : x(v.i), y(v.j), z(v.k) {}
+	~Point() {}
 
 	Point operator +(Vector v) { return Point(x + v.i, y + v.j, z + v.k); }
 	Point& operator +=(Vector v) { x += v.i; y += v.j; z += v.k; return *this; }

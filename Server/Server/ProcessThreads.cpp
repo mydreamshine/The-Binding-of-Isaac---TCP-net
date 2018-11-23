@@ -1,4 +1,6 @@
 #include "ProcessThreads.h"
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 
 HANDLE hRecvAllEvent[MAX_CLIENT];
 HANDLE hUpdateEvent[MAX_CLIENT];
@@ -155,32 +157,32 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 			int PlayerNum = GameProcessFunc::FindNullPlayerIndex(PlayerNullindexs);
 			for (int i = 0; i < PlayerNum; ++i)
 				SetEvent(hRecvAllEvent[PlayerNullindexs[i]]);
+
+			// 모든 클라이언트로부터 Recv()가 확인 될 때까지 대기
+			WaitForMultipleObjects(MAX_CLIENT, hRecvAllEvent, TRUE, INFINITE);
+
+			// ElapsedTime 계산
+			static DWORD g_PrevRenderTime = 0;
+			static DWORD cur_Time = 0;
+			static float eTime = 0.0f;
+
+			if (g_PrevRenderTime == 0)
+				g_PrevRenderTime = timeGetTime();
+			cur_Time = timeGetTime();
+
+			eTime = (float)(cur_Time - g_PrevRenderTime) / 1000.0f;
+			//eTime = 60.0f/1000;
+			g_PrevRenderTime = cur_Time;
+
+			// 게임 오브젝트 Update
+			GameProcessFunc::ProcessInput(eTime);
+			GameProcessFunc::ProcessPhisics(eTime);
+			GameProcessFunc::BossPattern(eTime);
+			GameProcessFunc::ProcessCollision(eTime);
+
+			// 게임 오브젝트의 정보를 통신 오브젝트에 반영
+			GameProcessFunc::ResetCommunicationBuffer();
 		}
-		// 모든 클라이언트로부터 Recv()가 확인 될 때까지 대기
-		WaitForMultipleObjects(MAX_CLIENT, hRecvAllEvent, TRUE, INFINITE);
-
-		// ElapsedTime 계산
-		static DWORD g_PrevRenderTime = 0;
-		static DWORD cur_Time = 0;
-		static float eTime = 0.0f;
-
-		if (g_PrevRenderTime == 0)
-			g_PrevRenderTime = timeGetTime();
-		cur_Time = timeGetTime();
-
-		eTime = (float)(cur_Time - g_PrevRenderTime) / 1000.0f;
-		g_PrevRenderTime = cur_Time;
-
-
-		// 게임 오브젝트 Update
-		GameProcessFunc::ProcessInput(eTime);
-		GameProcessFunc::ProcessPhisics(eTime);
-		GameProcessFunc::BossPattern(eTime);
-		GameProcessFunc::ProcessCollision(eTime);
-
-		// 게임 오브젝트의 정보를 통신 오브젝트에 반영
-		GameProcessFunc::ResetCommunicationBuffer();s
-
 		// 모든 오브젝트의 업데이트가 끝남을 알림
 		// hUpdateEvent를 클라이언트 개수만큼 신호상태로 한 이유:
 		// hUpdateEvent를 각 ProcessClient마다 비신호 상태로 바꿀려고 하면

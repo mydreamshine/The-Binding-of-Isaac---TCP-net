@@ -75,6 +75,7 @@
 #define BOSS_SPEED                  1.0f
 #define BOSS_MASS                   0.1f
 #define BOSS_FRICTION_FACTOR        0.5f
+#define BOSS_BULLET_SPEED			2.0f
 #define BOSS_BOUNDINGBOX_WIDTH    
 #define BOSS_BOUNDINGBOX_HEIGHT   
 #define BULLET_SPEED                10.0f
@@ -102,3 +103,6 @@
 #define SHOOT_PATTERN_1     0
 #define SHOOT_PATTERN_2     1
 #define SHOOT_PATTERN_3     2
+
+//PI
+#define PI 3.141592

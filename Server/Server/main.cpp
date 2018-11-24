@@ -4,7 +4,6 @@ int main(int argc, char argv[])
 {
 	// 게임 오브젝트 초기화
 	GameProcessFunc::InitGameObject();
-	GameProcessFunc::CreateNewBoss();
 
 	int retval;
 

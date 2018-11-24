@@ -91,6 +91,7 @@ private:
 
 	short  m_Pattern;
 	float  m_Etime;
+	bool   m_PatternInit;
 
 public:
 	Boss();
@@ -102,6 +103,7 @@ public:
 	void SetPos_InTexture(POINT newPoint) { m_Pos_InTexture = newPoint; }
 	void SetPattern(short pattern) { m_Pattern = pattern; }
 	void SetEtime(float Etime) { m_Etime = Etime; }
+	void SetPatternInit(bool PatternInit) { m_PatternInit = PatternInit; }
 
 	u_int  GetHP() { return m_HP; }
 	Point  GetPosition() { return m_Position; }
@@ -109,6 +111,7 @@ public:
 	POINT  GetPos_InTexture() { return m_Pos_InTexture; }
 	short  GetPattern() { return m_Pattern; }
 	float  GetEtime() { return m_Etime; }
+	bool   GetPatternInit() { return m_PatternInit; }
 
 	void Update(float ElapsedTime);
 	void ApplyForce(Vector Force, float ElapsedTime);

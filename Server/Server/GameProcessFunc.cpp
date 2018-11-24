@@ -62,6 +62,7 @@ bool GameProcessFunc::CreateNewBoss()
 	BossObj->SetPos_InTexture(newPos_InTexture);
 	BossObj->SetPattern(1);
 	BossObj->SetEtime(0.f);
+	BossObj->SetPatternInit(true);
 
 	return true;
 }
@@ -312,7 +313,7 @@ void GameProcessFunc::ProcessPhisics(float ElapsedTime)
 	}
 
 	if (BossObj != NULL)
-		BossObj->Update(ElapsedTime);
+			BossPattern(ElapsedTime);
 
 	for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
 	{
@@ -442,6 +443,9 @@ void GameProcessFunc::BulletShoot(bool Possesion, Point Pos, Vector Velocity, un
 	float frictionFactor;
 	u_int Damage;
 
+	int bossShootNum;
+	float currentShoot;
+
 	if (Possesion == true) // Player가 발사한 Bullet
 	{
 		mass = BULLET_MASS;
@@ -487,25 +491,68 @@ void GameProcessFunc::BulletShoot(bool Possesion, Point Pos, Vector Velocity, un
 		switch (shootID)
 		{
 		case SHOOT_PATTERN_1:
+			bossShootNum = rand() % 4 + 7;
+			currentShoot = 0;
+			while (currentShoot < bossShootNum) {
+				for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+				{
+					if (BulletBuffer[i] == NULL)
+					{
+						Point target = BossGetPoint();
+
+						newVelocity.i = cos(double(rand() % 45) / 180 * PI);
+
+						if (target.x - BossObj->GetPosition().x < 0)
+							newVelocity.i = -newVelocity.i;
+
+						if (!(rand() % 2))
+							newVelocity.j = sin(double(rand() % 45) / 180 * PI);
+						else
+							newVelocity.j = -sin(double(rand() % 45) / 180 * PI);
+
+						BulletBuffer[i] = new Bullet();
+						BulletBuffer[i]->SetPossesion(false);
+						BulletBuffer[i]->SetPosition(newPoint);
+						BulletBuffer[i]->SetVelocity(newVelocity * BOSS_BULLET_SPEED);
+						BulletBuffer[i]->SetMass(mass);
+						BulletBuffer[i]->SetFrictionFactor(frictionFactor);
+						BulletBuffer[i]->SetDamage(Damage);
+						break;
+					}
+				}
+				currentShoot++;
+			}
 			break;
+
 		case SHOOT_PATTERN_2:
+			bossShootNum = 8;
+			currentShoot = 0;
+			while (currentShoot < bossShootNum) {
+				for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+				{
+					if (BulletBuffer[i] == NULL)
+					{
+						newVelocity.i = cos((currentShoot * 45 / 180) * PI);
+						newVelocity.j = sin((currentShoot * 45 / 180) * PI);
+
+						std::cout << newVelocity.i << "," << newVelocity.j << std::endl;
+
+						BulletBuffer[i] = new Bullet();
+						BulletBuffer[i]->SetPossesion(false);
+						BulletBuffer[i]->SetPosition(newPoint);
+						BulletBuffer[i]->SetVelocity(newVelocity * BOSS_BULLET_SPEED);
+						BulletBuffer[i]->SetMass(mass);
+						BulletBuffer[i]->SetFrictionFactor(frictionFactor);
+						BulletBuffer[i]->SetDamage(Damage);
+						break;
+					}
+				}
+				currentShoot++;
+			}
 			break;
+
 		case SHOOT_PATTERN_3:
 			break;
-		}
-		for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
-		{
-			if (BulletBuffer[i] == NULL)
-			{
-				BulletBuffer[i] = new Bullet();
-				BulletBuffer[i]->SetPossesion(false);
-				BulletBuffer[i]->SetPosition(newPoint);
-				BulletBuffer[i]->SetVelocity(Velocity);
-				BulletBuffer[i]->SetMass(mass);
-				BulletBuffer[i]->SetFrictionFactor(frictionFactor);
-				BulletBuffer[i]->SetDamage(Damage);
-				break;
-			}
 		}
 	}
 }
@@ -585,38 +632,48 @@ void GameProcessFunc::BossJump(float ElapsedTime)
 	float total_eTime;
 	total_eTime = BossObj->GetEtime();
 
-	float amount = 10.f;
+	float jumpforce = 10.f;
+	float moveforce = 1.5f;
 
 	total_eTime += ElapsedTime;
 
-	if (total_eTime >= 0.f && total_eTime < 0.5f) {
-		BossObj->SetPos_InTexture(POINT{ 1,1 });
-		ps.y = -amount * ((total_eTime * total_eTime) - total_eTime + 0.25f) + 2;
-		if (ps.y < 0)
-			ps.y = 0;
+	Vector Direction;
+
+	if (BossObj->GetPatternInit()) {
+		Direction = BossGetDirectirion();
+		BossObj->SetPatternInit(false);
+		BossObj->SetVelocity(Direction);
 	}
-	else if (total_eTime >= 0.5f && total_eTime < 1.0f) {
-		BossObj->SetPos_InTexture(POINT{ 2,1 });
-		ps.y = 2;
+
+	if (total_eTime >= 0.0f && total_eTime < 1.0f) {
+		BossObj->SetPos_InTexture(POINT{ 7,0 });
+		ps.z = -jumpforce * ((total_eTime * total_eTime) - total_eTime + 0.25f) + 2;
+		if (ps.z >= 0) {
+			ps.x = ps.x + (BossObj->GetVelocity().i * ElapsedTime * moveforce);
+			ps.y = ps.y + (BossObj->GetVelocity().j * ElapsedTime * moveforce);
+		}
+		if (ps.z < 0) {
+			ps.z = 0;
+		}
+
+		//std::cout << "Etime : " << total_eTime << " / 보스 위치 : (" << ps.x << "," << ps.y <<"," << ps.z << ")" << std::endl;
 	}
 	else if (total_eTime >= 1.0f && total_eTime < 1.5f) {
-		BossObj->SetPos_InTexture(POINT{ 1,1 });
-		ps.y = -amount * (((total_eTime - 0.5f) * (total_eTime - 0.5f)) - (total_eTime - 0.5f) + 0.25f) + 2;
-		if (ps.y < 0)
-			ps.y = 0;
+		BossObj->SetPos_InTexture(POINT{ 8,0 });
+		ps.z = 0;
 	}
 	else if (total_eTime >= 1.5f && total_eTime < 2.0f) {
 		BossObj->SetPos_InTexture(POINT{ 2,0 });
-		ps.y = 0;
+		ps.z = 0;
 	}
 	else {
 		total_eTime = 0;
-		//BossObj->SetPattern(rand() % 3 + 1);
+		BossObj->SetPatternInit(true);
+		BossObj->SetPattern(rand() % 3 + 1);
 	}
 
 	BossObj->SetEtime(total_eTime);
 	BossObj->SetPosition(ps);
-	// std::cout << "total eTime : " << total_eTime << std::endl;
 }
 
 void GameProcessFunc::BossHighJump(float ElapsedTime)
@@ -628,29 +685,59 @@ void GameProcessFunc::BossHighJump(float ElapsedTime)
 	float total_eTime;
 	total_eTime = BossObj->GetEtime();
 
-	float amount = 20.f;
+	float jumpforce = 25.f;
 
 	total_eTime += ElapsedTime;
 
-	if (total_eTime >= 0.f && total_eTime < 1.5f) {
+	if (total_eTime >= 0.f && total_eTime < 0.75f) {
 		BossObj->SetPos_InTexture(POINT{ 4,0 });
-		ps.y = -amount * (total_eTime * (total_eTime - 1.5f));
-		if (ps.y < 0)
-			ps.y = 0;
+		ps.z = -jumpforce * (total_eTime * (total_eTime - 1.5f));
+
+		if (ps.z < 0)
+			ps.z = 0;
+
+		BossObj->SetPatternInit(true);
 	}
-	else if (total_eTime >= 1.5f && total_eTime < 2.0f) {
-		BossObj->SetPos_InTexture(POINT{ 1,1 });
-		ps.y = 0;
+	else if (total_eTime >= 0.75f && total_eTime < 1.5f) {
+		BossObj->SetPos_InTexture(POINT{ 6,0 });
+		ps.z = -jumpforce * (total_eTime * (total_eTime - 1.5f));
+		
+		if (BossObj->GetPatternInit()) {
+			Point newPoint = BossGetPoint();
+			ps.x = newPoint.x;
+			ps.y = newPoint.y;
+			BossObj->SetPatternInit(false);
+		}
+
+		if (ps.z < 0)
+			ps.z = 0;
+	}
+	else if (total_eTime >= 1.5f && total_eTime < 1.7f) {
+		BossObj->SetPos_InTexture(POINT{ 5,0 });
+		ps.z = 0;
+
+		BossObj->SetPatternInit(true);
+	}
+	else if (total_eTime >= 1.7f && total_eTime < 2.2f) {
+		BossObj->SetPos_InTexture(POINT{ 8,0 });
+		ps.z = 0;
+
+		if (BossObj->GetPatternInit()) {
+			BulletShoot(false, BossObj->GetPosition(), Vector(0, 0, 0), SHOOT_PATTERN_2);
+			BossObj->SetPatternInit(false);
+		}
+	}
+	else if (total_eTime >= 2.2f && total_eTime < 2.7f) {
+		BossObj->SetPos_InTexture(POINT{ 2,0 });
+		ps.z = 0;
 	}
 	else {
-		BossObj->SetPos_InTexture(POINT{ 1,1 });
 		total_eTime = 0;
 		BossObj->SetPattern(rand() % 3 + 1);
 	}
 
 	BossObj->SetEtime(total_eTime);
 	BossObj->SetPosition(ps);
-	// std::cout << "total eTime : " << total_eTime << std::endl;
 }
 
 void GameProcessFunc::BossShoot(float ElapsedTime)
@@ -664,23 +751,69 @@ void GameProcessFunc::BossShoot(float ElapsedTime)
 
 	total_eTime += ElapsedTime;
 
-	if (total_eTime >= 0.7f && total_eTime < 0.8f) {
-		srand(GetTickCount());
+	if (total_eTime >= 0.f && total_eTime < 0.5f) {
+		BossObj->SetPos_InTexture(POINT{ 1,0 });
+		BossObj->SetPatternInit(true);
+	}
+	else if (total_eTime >= 0.5f && total_eTime < 1.5f) {
+		BossObj->SetPos_InTexture(POINT{ 3,0 });
 
-		float vX, vY;
-		vX = float((rand() % 500) / 1000.f) + 0.5f;
+		if (total_eTime >= 0.6f) {
+			if (BossObj->GetPatternInit()) {
+				BulletShoot(false, BossObj->GetPosition(), Vector(0, 0, 0), SHOOT_PATTERN_1);
+				BossObj->SetPatternInit(false);
+			}
+		}
 
-		if (!(rand() % 2))
-			vY = sqrt(1 - (vX * vX));
-		else
-			vY = -(sqrt(1 - (vX * vX)));
-
-		BulletShoot(false, BossObj->GetPosition(), Vector(vX, vY, 0), SHOOT_PATTERN_1);
 		// std::cout << "Attack!!!" << "(" << vX << "," << vY << ")" << std::endl;
 	}
-	if (total_eTime > 2.0f) {
+	else if (total_eTime >= 1.5f && total_eTime < 2.0f) {
+		BossObj->SetPos_InTexture(POINT{ 2,0 });
+		// std::cout << "Attack!!!" << "(" << vX << "," << vY << ")" << std::endl;
+	}
+	else {
 		total_eTime = 0;
 		BossObj->SetPattern(rand() % 3 + 1);
 	}
 	BossObj->SetEtime(total_eTime);
+}
+
+Vector GameProcessFunc::BossGetDirectirion()
+{
+	Vector min_direction = {100, 100, 100};
+
+	Point BossPosition = BossObj->GetPosition();
+	BossPosition.z = 0;
+
+	for (int i = 0; i < MAX_CLIENT; i++)
+	{
+		if (PlayerBuffer[i] != NULL) {
+			Point ClientPosition = PlayerBuffer[i]->GetHeadPosition();
+
+			if (BossPosition.distanceTo(ClientPosition) < min_direction.magnitude()) {
+				//std::cout << i << "번 클라 : " << BossPosition.distanceTo(ClientPosition) << std::endl;
+				min_direction = ClientPosition - BossPosition;
+			}
+		}
+	}
+	//std::cout << "단위 벡터 : " << "(" << unit(min_direction).i << "," << unit(min_direction).j << "," << unit(min_direction).k << ")" <<std::endl;
+	return unit(min_direction);
+}
+
+Point GameProcessFunc::BossGetPoint()
+{
+	Point newPoint;
+	int randomPlayer;
+
+	while (1) {
+		randomPlayer = rand() % MAX_CLIENT;
+		if (PlayerBuffer[randomPlayer] != NULL) {
+			newPoint = PlayerBuffer[randomPlayer]->GetHeadPosition();
+			break;
+		}
+	}
+
+	//std::cout << "새 위치 : " << "(" << newPoint.x << "," << newPoint.y << "," << newPoint.z << ")" << std::endl;
+
+	return newPoint;
 }

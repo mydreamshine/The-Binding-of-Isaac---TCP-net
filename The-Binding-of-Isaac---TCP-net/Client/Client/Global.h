@@ -50,14 +50,22 @@
 #define MAX_PLAYER_HEAD_ANIMATION_SEQUENCE_Y 1
 #define MAX_PLAYER_BODY_ANIMATION_SEQUENCE_X 10
 #define MAX_PLAYER_BODY_ANIMATION_SEQUENCE_Y 3
+#define MAX_BOSS_ANIMATION_SEQUENCE_X 9
+#define MAX_BOSS_ANIMATION_SEQUENCE_Y 1
 #define PLAYER_WIDTH  1.0f
 #define PLAYER_HEIGHT 1.0f
 #define BULLET_WIDTH  0.3f
 #define BULLET_HEIGHT 0.3f
+#define BOSS_WIDTH    1.0f
+#define BOSS_HEIGHT   1.0f
 
 
 // Phisical Option
 #define GravityAccelarationFactor   9.80665f
+#define BACKGROUND_UP_MARGINE       110.0f
+#define BACKGROUND_DOWN_MARGINE     110.0f
+#define BACKGROUND_LEFT_MARGINE     110.0f
+#define BACKGROUND_RIGHT_MARGINE    110.0f
 #define PLAYER_SPEED                1.0f
 #define PLAYER_MASS                 0.1f
 #define PLAYER_FRICTION_FACTOR      0.5f

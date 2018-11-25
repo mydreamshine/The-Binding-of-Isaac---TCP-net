@@ -75,6 +75,7 @@ void KeyUp(unsigned char key, int x, int y)
 
 void SpecialKeyPressed(int key, int x, int y)
 {
+
 	g_pScene->SpecialKeyPressed(key, x, y);
 }
 

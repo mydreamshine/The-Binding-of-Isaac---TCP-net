@@ -266,7 +266,7 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 			if (CommuncationBuffer[i].Obj_Type != KIND_NULL)
 			{
 				Point subPos = CommuncationBuffer[i].Obj_Pos - m_RenderObjects[i].Obj_Pos;
-				//cout << "sub Pos: (" << subPos.x << "," << subPos.y << ")" << endl;
+				cout << "sub Pos: (" << subPos.x << "," << subPos.y << ")" << endl;
 				m_RenderObjects[i].Obj_Type = CommuncationBuffer[i].Obj_Type;
 				m_RenderObjects[i].Obj_Pos += (CommuncationBuffer[i].Obj_Pos - m_RenderObjects[i].Obj_Pos)*0.3f;
 				//m_RenderObjects[i].Obj_Velocity += (CommuncationBuffer[i].Obj_Velocity - m_RenderObjects[i].Obj_Velocity)*0.5;

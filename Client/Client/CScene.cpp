@@ -3,6 +3,7 @@
 
 HANDLE hWriteEvent;
 HANDLE hReadEvent;
+bool specialKeycheck[4] = { false };
 
 CPlayScene::~CPlayScene()
 {
@@ -50,11 +51,47 @@ void CPlayScene::KeyUp(unsigned char key, int x, int y)
 
 void CPlayScene::SpecialKeyPressed(int key, int x, int y)
 {
+	for (int i = 0; i < 4; i++) {
+		if (specialKeycheck[i] == true) return;
+	}
+	switch (key)
+	{
+	case 0x0065:	// up
+		specialKeycheck[0] = true;
+		break;
+	case 0x0067:	// down
+		specialKeycheck[1] = true;
+		break;
+	case 0x0066:	// right
+		specialKeycheck[2] = true;
+		break;
+	case 0x0064:	// left
+		specialKeycheck[3] = true;
+		break;
+	}
 	m_SpecialKeyState[key] = true;
 }
 
 void CPlayScene::SpecialKeyUp(int key, int x, int y)
 {
+	switch (key)
+	{
+	case 0x0065:	// up
+		specialKeycheck[0] = false;
+		break;
+	case 0x0067:	// down
+		specialKeycheck[1] = false;
+		break;
+	case 0x0066:	// right
+		specialKeycheck[2] = false;
+		break;
+	case 0x0064:	// left
+		specialKeycheck[3] = false;
+		break;
+	}
+	for (int i = 0; i < 4; i++) {
+		if (specialKeycheck[i] == true) return;
+	}
 	m_SpecialKeyState[key] = false;
 }
 

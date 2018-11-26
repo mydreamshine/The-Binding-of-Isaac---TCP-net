@@ -13,7 +13,7 @@
 #define WND_HEIGHT 800
 
 // Game Elements
-#define MAX_OBJECT 1000
+#define MAX_OBJECT 500
 #define PLAYER_INIT_HP 6
 #define BOSS_INIT_HP 100
 #define PLAYER_BULLET_DAMAGE 1

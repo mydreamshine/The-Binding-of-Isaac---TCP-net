@@ -15,8 +15,6 @@ CScene* g_pScene = nullptr;
 
 void RenderScene(void)
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
 	static char m_pszFrameRate[50] = "The Binding of Isaac - Client (";
 
@@ -28,16 +26,24 @@ void RenderScene(void)
 		g_PrevRenderTime = timeGetTime();
 	cur_Time = timeGetTime();
 	eTime = (float)(cur_Time - g_PrevRenderTime) / 1000.0f;
-	g_PrevRenderTime = cur_Time;
-	_itoa_s((int)(1.0f/ eTime), m_pszFrameRate + 31, 19, 10);
-	strcat_s(m_pszFrameRate + 31, 19, " FPS)");
-	glutSetWindowTitle(m_pszFrameRate);
 
-	g_pScene->UpdateScene(eTime);
+	//일정 프레임이 나오도록 변경
+	if (eTime > 1.f / DRAWFRAME) {
 
-	g_pScene->RendrScene();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
-	glutSwapBuffers();
+		g_PrevRenderTime = cur_Time;
+		_itoa_s((int)(1.0f / eTime), m_pszFrameRate + 31, 19, 10);
+		strcat_s(m_pszFrameRate + 31, 19, " FPS)");
+		glutSetWindowTitle(m_pszFrameRate);
+
+		g_pScene->UpdateScene(eTime);
+
+		g_pScene->RendrScene();
+
+		glutSwapBuffers();
+	}
 }
 
 void Idle(void)

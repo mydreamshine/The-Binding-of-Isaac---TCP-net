@@ -85,7 +85,7 @@
 #define BOSS_BOUNDINGBOX_HEIGHT   
 #define BULLET_SPEED                10.0f
 #define BULLET_MASS                 0.01f
-#define BULLET_FRICTION_FACTOR      0.01f
+#define BULLET_FRICTION_FACTOR      0.001f
 #define BULLET_BOUNDINGBOX_WIDTH
 #define BULLET_BOUNDINGBOX_HEIGHT 
 

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -20,16 +20,16 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{1BECAC50-57F7-4BAA-8C23-646347D8FD37}</ProjectGuid>
+    <ProjectGuid>{453CE5B8-9C7F-49A4-969F-A4A27641A4EB}</ProjectGuid>
     <RootNamespace>Client</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>NotSet</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -117,8 +117,8 @@
   <ItemGroup>
     <ClCompile Include="CScene.cpp" />
     <ClCompile Include="LoadPng.cpp" />
-    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -131,20 +131,21 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Resource\Graphic\Background.png" />
+    <Image Include="Resource\Graphic\Blood_Tear.png" />
+    <Image Include="Resource\Graphic\Boss.png" />
+    <Image Include="Resource\Graphic\Isaac_Body.png" />
+    <Image Include="Resource\Graphic\Isaac_Head.png" />
+    <Image Include="Resource\Graphic\Shadow.png" />
+    <Image Include="Resource\Graphic\Tear.png" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Resource\Shaders\SolidRect.fs" />
     <None Include="Resource\Shaders\SolidRect.vs" />
     <None Include="Resource\Shaders\TextureRect.fs" />
     <None Include="Resource\Shaders\TextureRect.vs" />
     <None Include="Resource\Shaders\TextureRectSeq.fs" />
     <None Include="Resource\Shaders\TextureRectSeq.vs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Resource\Graphic\Background.png" />
-    <Image Include="Resource\Graphic\Blood_Tear.png" />
-    <Image Include="Resource\Graphic\Isaac_Body.png" />
-    <Image Include="Resource\Graphic\Isaac_Head.png" />
-    <Image Include="Resource\Graphic\Shadow.png" />
-    <Image Include="Resource\Graphic\Tear.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

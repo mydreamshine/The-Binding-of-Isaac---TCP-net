@@ -142,7 +142,7 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 			if (GameStart)
 			{
 				GameProcessFunc::InitGameObject();
-				GameProcessFunc::CreateNewBoss();
+				//GameProcessFunc::CreateNewBoss();
 				GameStart = false;
 			}
 			for (int i = 0; i < MAX_CLIENT; ++i)
@@ -150,6 +150,12 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 		}
 		else
 		{
+			if (GameStart)
+			{
+				GameProcessFunc::CreateNewBoss();
+				GameStart = false;
+			}
+
 			// 현재 서버에 접속한 클라이언트에 해당되는 hRecvAllEvent를 (hRecvAllEvent[ClientID])
 			// 제외한 나머지 hRecvAllEvent에 대해서 신호상태로 바꿔준다.
 			// (hUpdateEvent를 수행하기 위함.)
@@ -171,7 +177,6 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 			cur_Time = timeGetTime();
 
 			eTime = (float)(cur_Time - g_PrevRenderTime) / 1000.0f;
-			//eTime = 60.0f/1000;
 			g_PrevRenderTime = cur_Time;
 
 			// 게임 오브젝트 Update

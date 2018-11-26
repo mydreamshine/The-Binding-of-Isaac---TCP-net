@@ -40,8 +40,6 @@ bool CPlayScene::InitialObjects()
 {
 	hCallCommunicationEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 	hCompleteCommunicaitionEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-
-
 	return true;
 }
 
@@ -140,16 +138,6 @@ void CPlayScene::RendrScene()
 	int Animation_Sequence_X = 1;
 	int Animation_Sequence_Y = 1;
 
-
-	//더이상 랜더 신에서 서버와의 동기화를 고려 하지 않음
-	//// Recv가 되었는지 확인 후 
-	//if (bRecvComplete)
-	//{
-	//	// m_RenderObject로 CommunicationData가 Copy완료될 때까지 대기
-	//	WaitForSingleObject(hCompleteCommunicaitionEvent, INFINITE);
-	//	bRecvComplete = false;
-	//}
-
 	for (u_int i = 0; i < MAX_OBJECT; ++i)
 	{
 		if (m_RenderObjects[i].Obj_Type != KIND_NULL)
@@ -215,9 +203,6 @@ void CPlayScene::RendrScene()
 			);
 		}
 	}
-
-	//더 이상 랜더 신에서 동기화를 하지 않음
-	//SetEvent(hCallCommunicationEvent);
 }
 
 void CPlayScene::CommunicationWithServer(LPVOID arg)

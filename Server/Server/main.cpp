@@ -4,7 +4,6 @@ int main(int argc, char argv[])
 {
 	// 게임 오브젝트 초기화
 	GameProcessFunc::InitGameObject();
-	GameProcessFunc::CreateNewBoss();
 
 	int retval;
 
@@ -54,7 +53,7 @@ int main(int argc, char argv[])
 		err_quit((char*)"CreateThread()");
 	else CloseHandle(hThread);
 
-	cout << "[TCP 서버] 소켓 통신 준비 완료\n클라이언트 요청 대기중...";
+	cout << "[TCP 서버] 소켓 통신 준비 완료\n클라이언트 요청 대기중..." << endl;
 	// 데이터 통신에 사용할 변수
 	SOCKET client_sock = NULL;
 	SOCKADDR_IN clientaddr;

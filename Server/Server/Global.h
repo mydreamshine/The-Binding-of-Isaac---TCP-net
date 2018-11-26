@@ -18,7 +18,7 @@
 #define BOSS_INIT_HP 100
 #define PLAYER_BULLET_DAMAGE 1
 #define BOSS_BULLET_DAMAGE 1
-#define MAX_BULLET_REFLECT_COUNT 3
+#define MAX_BULLET_REFLECT_COUNT 2
 
 
 
@@ -75,11 +75,12 @@
 #define BOSS_SPEED                  1.0f
 #define BOSS_MASS                   0.1f
 #define BOSS_FRICTION_FACTOR        0.5f
+#define BOSS_BULLET_SPEED			2.0f
 #define BOSS_BOUNDINGBOX_WIDTH    
 #define BOSS_BOUNDINGBOX_HEIGHT   
 #define BULLET_SPEED                10.0f
 #define BULLET_MASS                 0.01f
-#define BULLET_FRICTION_FACTOR      0.01f
+#define BULLET_FRICTION_FACTOR      0.001f
 #define BULLET_BOUNDINGBOX_WIDTH
 #define BULLET_BOUNDINGBOX_HEIGHT 
 

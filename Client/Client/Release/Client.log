@@ -4,6 +4,8 @@
   main.cpp
   stdafx.cpp
   코드를 생성하고 있습니다.
-  All 429 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  430 of 430 functions (100.0%) were compiled.
+    81 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
   코드를 생성했습니다.
-  Client.vcxproj -> C:\Users\KYH\Desktop\아이작\The-Binding-of-Isaac---TCP-net\Client\Release\Client.exe
+  Client.vcxproj -> C:\Users\Administrator\Desktop\새 폴더\The-Binding-of-Isaac---TCP-net\Client\Release\Client.exe

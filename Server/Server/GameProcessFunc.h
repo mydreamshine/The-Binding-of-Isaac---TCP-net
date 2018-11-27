@@ -24,5 +24,7 @@ namespace GameProcessFunc
 	void BossJump(float ElapsedTime);
 	void BossHighJump(float ElapsedTime);
 	void BossShoot(float ElapsedTime);
+	Vector BossGetDirectirion();
+	Point BossGetPoint();
 }
 ///////////////////////////////////////////////////////////////////////////////////////////

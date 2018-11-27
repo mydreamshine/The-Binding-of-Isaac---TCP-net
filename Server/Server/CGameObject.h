@@ -39,13 +39,12 @@ private:
 	Vector m_Velocity;
 	Vector m_Acceleration;
 
-	POINT  m_Pos_InHeadTexture;
-	POINT  m_Pos_InBodyTexture;
-	POINT  m_SeqBody = { 0,0 };
-	POINT  m_SeqHead = { 0,0 };
+	POINT  m_SeqBody;
+	POINT  m_SeqHead;
 
-	bool   m_KeyState[256];
-	bool   m_SpecialKeyState[246];
+	bool      m_KeyState[256];
+	bool      m_SpecialKeyState[246];
+	list<int> m_ArrowKeyStack;
 public:
 	Player();
 	~Player() = default;
@@ -54,22 +53,20 @@ public:
 	void SetHeadPosition(Point newPoint)      { m_HeadPosition = newPoint; }
 	void SetBodyPosition(Point newPoint)      { m_BodyPosition = newPoint; }
 	void SetVelocity(Vector nweVelocity)      { m_Velocity = nweVelocity; }
-	void SetPos_InHeadTexture(POINT newPoint) { m_Pos_InHeadTexture = newPoint; }
-	void SetPos_InBodyTexture(POINT newPoint) { m_Pos_InBodyTexture = newPoint; }
-	void SetSeqBody(POINT newSeq) { m_SeqBody = newSeq; }
-	void SetSeqHead(POINT newSeq) { m_SeqHead = newSeq; }
+	void SetSeqBody(POINT newPoint)           { m_SeqBody = newPoint; }
+	void SetSeqHead(POINT newPoint)           { m_SeqHead = newPoint; }
 
 	u_int  GetHP()                            { return m_HP; }
 	Point  GetHeadPosition()                  { return m_HeadPosition; }
 	Point  GetBodyPosition()                  { return m_BodyPosition; }
 	Vector GetVelocity()                      { return m_Velocity; }
-	POINT  GetPos_InHeadTexture()             { return m_Pos_InHeadTexture; }
-	POINT  GetPos_InBodyTexture()             { return m_Pos_InBodyTexture; }
 
 	POINT GetSeqBody()						  { return m_SeqBody; }
 	POINT GetSeqHead()						  { return m_SeqHead; }
+
 	bool * GetKeyBuffer()                     { return m_KeyState; }
 	bool * GetSpecialKeyBuffer()              { return m_SpecialKeyState; }
+	list<int>* GetArrowKeyStack()             { return &m_ArrowKeyStack; }
 
 	void Update(float ElapsedTime);
 	void ApplyForce(Vector Force, float ElapsedTime);
@@ -92,6 +89,7 @@ private:
 
 	short  m_Pattern;
 	float  m_Etime;
+	bool   m_PatternInit;
 
 public:
 	Boss();
@@ -103,6 +101,7 @@ public:
 	void SetPos_InTexture(POINT newPoint) { m_Pos_InTexture = newPoint; }
 	void SetPattern(short pattern) { m_Pattern = pattern; }
 	void SetEtime(float Etime) { m_Etime = Etime; }
+	void SetPatternInit(bool PatternInit) { m_PatternInit = PatternInit; }
 
 	u_int  GetHP() { return m_HP; }
 	Point  GetPosition() { return m_Position; }
@@ -110,6 +109,7 @@ public:
 	POINT  GetPos_InTexture() { return m_Pos_InTexture; }
 	short  GetPattern() { return m_Pattern; }
 	float  GetEtime() { return m_Etime; }
+	bool   GetPatternInit() { return m_PatternInit; }
 
 	void Update(float ElapsedTime);
 	void ApplyForce(Vector Force, float ElapsedTime);

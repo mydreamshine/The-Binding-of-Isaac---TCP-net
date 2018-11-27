@@ -4,8 +4,8 @@
 
 using namespace std;
 
-HANDLE hReadEvent;
-HANDLE hWriteEvent;
+HANDLE hCallCommunicationEvent;
+HANDLE hCompleteCommunicaitionEvent;
 bool   bRecvComplete = false;
 
 CommunicationData CommuncationBuffer[MAX_OBJECT];
@@ -16,8 +16,8 @@ CPlayScene::~CPlayScene()
 		m_pRenderer->DeleteTexture(m_TextureIDs[i]);
 	if (m_pRenderer) delete m_pRenderer;
 
-	CloseHandle(hReadEvent);
-	CloseHandle(hWriteEvent);
+	CloseHandle(hCallCommunicationEvent);
+	CloseHandle(hCompleteCommunicaitionEvent);
 }
 
 bool CPlayScene::InitialRenderer(int windowSizeX, int windowSizeY, float TranslationScale)
@@ -38,8 +38,8 @@ bool CPlayScene::InitialRenderer(int windowSizeX, int windowSizeY, float Transla
 
 bool CPlayScene::InitialObjects()
 {
-	hReadEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
-	hWriteEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	hCallCommunicationEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
+	hCompleteCommunicaitionEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	return true;
 }
 
@@ -66,44 +66,64 @@ void CPlayScene::SpecialKeyUp(int key, int x, int y)
 
 void CPlayScene::UpdateScene(float elapsedTime)
 {
-	for (u_int i = 0; i < MAX_OBJECT; ++i)
-	{
-		if (m_RenderObjects[i].Obj_Type != KIND_NULL)
+	//업데이트에서 일정 시간마다 서버와의 통신 스레드를 부르도록 설정
+
+	static float communication_eTime = 0.0f;
+	communication_eTime += elapsedTime;
+
+	//일정 시간 마다 서버와의 통신을 함
+	if (1.f / COMUNICATIONFRAME < (communication_eTime + 1.f / DRAWFRAME)) {
+		//서버와의 통신 설정  //서버에서 그릴 것들을 가져옴
+		SetEvent(hCallCommunicationEvent);
+
+		//통신이 완료 될 때 까지 기다림
+		WaitForSingleObject(hCompleteCommunicaitionEvent, INFINITE);
+
+		//커뮤니케이션 시간이 지난 시간을 초기화
+		communication_eTime = 0;
+	}
+	else {
+		//통신을 하지 않을 경우 클라 자체에서 랜더링을 위한 데이터를 계산함
+		for (u_int i = 0; i < MAX_OBJECT; ++i)
 		{
-			if (!equal(m_RenderObjects[i].Obj_Velocity.magnitude(), 0.0f))
+			if (m_RenderObjects[i].Obj_Type != KIND_NULL)
 			{
-				// 중력(Gravity) = mg (g: 중력가속도(9.8m/s²)
-				Vector Gravity = Vector(1.0f, 1.0f, 1.0f) * PLAYER_MASS * GravityAccelarationFactor;
+				if (!equal(m_RenderObjects[i].Obj_Velocity.magnitude(), 0.0f))
+				{
+					// 중력(Gravity) = mg (g: 중력가속도(9.8m/s²)
+					Vector Gravity = Vector(1.0f, 1.0f, 1.0f) * PLAYER_MASS * GravityAccelarationFactor;
 
-				// 마찰력(Friction) = uN (u: 마찰계수, N: 수직항력(-mg))
-				Vector NormalForce = -Gravity;
-				Vector Friction = PLAYER_FRICTION_FACTOR * NormalForce;
-				Vector Direction = unit(m_RenderObjects[i].Obj_Velocity);
-				Friction.i *= Direction.i;
-				Friction.j *= Direction.j;
-				Friction.k *= Direction.k;
+					// 마찰력(Friction) = uN (u: 마찰계수, N: 수직항력(-mg))
+					Vector NormalForce = -Gravity;
+					Vector Friction = PLAYER_FRICTION_FACTOR * NormalForce;
+					Vector Direction = unit(m_RenderObjects[i].Obj_Velocity);
+					Friction.i *= Direction.i;
+					Friction.j *= Direction.j;
+					Friction.k *= Direction.k;
 
-				// 외력(ExternalForce)
-				Vector ExternalForce = /*Gravity + */Friction;
+					// 외력(ExternalForce)
+					Vector ExternalForce = /*Gravity + */Friction;
 
-				//CGameObject::ApplyForce(ExternalForce, elapsedTime);
+					//CGameObject::ApplyForce(ExternalForce, elapsedTime);
 
-				 // Calculate Acceleration
-				Vector Acceleration = ExternalForce / PLAYER_MASS;
-				Vector AfterVelocity = m_RenderObjects[i].Obj_Velocity + Acceleration * elapsedTime;
+					// Calculate Acceleration
+					Vector Acceleration = ExternalForce / PLAYER_MASS;
+					Vector AfterVelocity = m_RenderObjects[i].Obj_Velocity + Acceleration * elapsedTime;
 
-				if (cosine(AfterVelocity, m_RenderObjects[i].Obj_Velocity) < 0.0f) // 두 벡터 사잇각이 둔각일 경우 = 벡터의 성분(x,y,z)중 부호가 다른 성분이 1개 이상 존재.
-					m_RenderObjects[i].Obj_Velocity = { 0.0f, 0.0f, 0.0f };
-				else
-					m_RenderObjects[i].Obj_Velocity = AfterVelocity;
+					if (cosine(AfterVelocity, m_RenderObjects[i].Obj_Velocity) < 0.0f) // 두 벡터 사잇각이 둔각일 경우 = 벡터의 성분(x,y,z)중 부호가 다른 성분이 1개 이상 존재.
+						m_RenderObjects[i].Obj_Velocity = { 0.0f, 0.0f, 0.0f };
+					else
+						m_RenderObjects[i].Obj_Velocity = AfterVelocity;
+				}
+
+				// Calculation Position
+				// 새로운 위치 = 이전 위치 + 속도 * 시간
+				//m_HeadPosition += m_Velocity * ElapsedTime;
+				m_RenderObjects[i].Obj_Pos += m_RenderObjects[i].Obj_Velocity * elapsedTime;
 			}
-
-			// Calculation Position
-			// 새로운 위치 = 이전 위치 + 속도 * 시간
-			//m_HeadPosition += m_Velocity * ElapsedTime;
-			m_RenderObjects[i].Obj_Pos += m_RenderObjects[i].Obj_Velocity * elapsedTime;
 		}
 	}
+	
 }
 
 void CPlayScene::RendrScene()
@@ -117,14 +137,6 @@ void CPlayScene::RendrScene()
 	int TextureID = 0;
 	int Animation_Sequence_X = 1;
 	int Animation_Sequence_Y = 1;
-
-	// Recv가 되었는지 확인 후 
-	if (bRecvComplete)
-	{
-		// m_RenderObject로 CommunicationData가 Copy완료될 때까지 대기
-		WaitForSingleObject(hWriteEvent, INFINITE);
-		bRecvComplete = false;
-	}
 
 	for (u_int i = 0; i < MAX_OBJECT; ++i)
 	{
@@ -191,7 +203,6 @@ void CPlayScene::RendrScene()
 			);
 		}
 	}
-	SetEvent(hReadEvent);
 }
 
 void CPlayScene::CommunicationWithServer(LPVOID arg)
@@ -220,7 +231,7 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 		err_quit((char*)"connect()");																   //
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	WaitForSingleObject(hReadEvent, INFINITE);
+	WaitForSingleObject(hCallCommunicationEvent, INFINITE);
 	// recv(m_RenderObjects)
 	retval = recv(server_sock, (char*)m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, 0);
 	if (retval == SOCKET_ERROR || retval == 0)
@@ -232,10 +243,12 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 			<< endl;
 		err_display((char*)"recv()");
 	}
-	SetEvent(hWriteEvent);
+	SetEvent(hCompleteCommunicaitionEvent);
 
 	while (true)
 	{
+		//서버 통신을 부르길 기다림
+		WaitForSingleObject(hCallCommunicationEvent, INFINITE);
 		// send(m_KeyState)
 		retval = send(server_sock, (char*)m_KeyState, sizeof(bool) * 256, 0);
 		if (retval == SOCKET_ERROR)
@@ -258,7 +271,6 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 			err_display((char*)"recv()");
 			break;
 		}
-		WaitForSingleObject(hReadEvent, INFINITE);
 
 		// 데이터 보간
 		for (int i = 0; i < MAX_OBJECT; ++i)
@@ -273,10 +285,18 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 				m_RenderObjects[i].Obj_Pos_InTexture = CommuncationBuffer[i].Obj_Pos_InTexture;
 			}
 		}
+
+		//ZeroMemory(m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT);
 		memcpy_s(m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, CommuncationBuffer, sizeof(CommunicationData)*MAX_OBJECT);
+		
+		//더이상 랜더신에서 서버와의 동기화를 고려하지 않음.
 		bRecvComplete = true;
-		SetEvent(hWriteEvent);
-		this_thread::sleep_for(50ms);
+
+		//서버 통신이 완료 됬음을 알림
+		SetEvent(hCompleteCommunicaitionEvent);
+
+		//서버 스레드가 잠자도록 하지 않도록 변경
+		//this_thread::sleep_for(50ms);
 	}
 
 	cout

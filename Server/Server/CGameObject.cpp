@@ -4,8 +4,9 @@
 Player::Player()
 {
 	m_HP = 0;
-	m_Pos_InHeadTexture = { 0,0 };
-	m_Pos_InBodyTexture = { 0,0 };
+	m_SeqBody = { 0,0 };
+	m_SeqHead = { 0,0 };
+
 	ZeroMemory(m_KeyState, 256);
 	ZeroMemory(m_SpecialKeyState, 246);
 }

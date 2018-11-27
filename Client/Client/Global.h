@@ -8,7 +8,11 @@
 #define MAX_CLIENT 4
 #define SERVER_ADDR "127.0.0.1"
 #define SERVER_PORT 9000
-#define CPS 30 // Communication Per Second (1초당 통신 횟수)
+
+
+//Frame option
+#define DRAWFRAME 60
+#define COMUNICATIONFRAME 20
 
 
 // Window Option
@@ -16,7 +20,7 @@
 #define WND_HEIGHT 800
 
 // Game Elements
-#define MAX_OBJECT 1000
+#define MAX_OBJECT 500
 #define PLAYER_INIT_HP 6
 #define BOSS_INIT_HP 100
 #define PLAYER_BULLET_DAMAGE 1
@@ -81,7 +85,7 @@
 #define BOSS_BOUNDINGBOX_HEIGHT   
 #define BULLET_SPEED                10.0f
 #define BULLET_MASS                 0.01f
-#define BULLET_FRICTION_FACTOR      0.01f
+#define BULLET_FRICTION_FACTOR      0.001f
 #define BULLET_BOUNDINGBOX_WIDTH
 #define BULLET_BOUNDINGBOX_HEIGHT 
 

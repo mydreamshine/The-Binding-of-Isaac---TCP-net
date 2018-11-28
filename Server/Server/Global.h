@@ -19,6 +19,7 @@
 #define PLAYER_BULLET_DAMAGE 1
 #define BOSS_BULLET_DAMAGE 1
 #define MAX_BULLET_REFLECT_COUNT 2
+#define PLAYER_HIT_DEALAY 3
 
 
 
@@ -70,19 +71,19 @@
 #define PLAYER_SPEED                1.0f
 #define PLAYER_MASS                 0.1f
 #define PLAYER_FRICTION_FACTOR      0.5f
-#define PLAYER_BOUNDINGBOX_WIDTH    1.0f
-#define PLAYER_BOUNDINGBOX_HEIGHT   1.0f
+#define PLAYER_BOUNDINGBOX_WIDTH    PLAYER_WIDTH / 2
+#define PLAYER_BOUNDINGBOX_HEIGHT   PLAYER_HEIGHT / 2
 #define BOSS_SPEED                  1.0f
 #define BOSS_MASS                   0.1f
 #define BOSS_FRICTION_FACTOR        0.5f
 #define BOSS_BULLET_SPEED			2.0f
-#define BOSS_BOUNDINGBOX_WIDTH    
-#define BOSS_BOUNDINGBOX_HEIGHT   
+#define BOSS_BOUNDINGBOX_WIDTH      (BOSS_WIDTH / 2) * 0.8f
+#define BOSS_BOUNDINGBOX_HEIGHT     (BOSS_HEIGHT / 2) * 0.7f
 #define BULLET_SPEED                10.0f
 #define BULLET_MASS                 0.01f
 #define BULLET_FRICTION_FACTOR      0.001f
-#define BULLET_BOUNDINGBOX_WIDTH
-#define BULLET_BOUNDINGBOX_HEIGHT 
+#define BULLET_BOUNDINGBOX_WIDTH    BULLET_WIDTH
+#define BULLET_BOUNDINGBOX_HEIGHT   BULLET_HEIGHT
 
 
 // Player Commands

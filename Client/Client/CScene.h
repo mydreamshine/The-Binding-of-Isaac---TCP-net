@@ -62,7 +62,7 @@ public:
 	virtual void KeyOperation(float elapsedTime) {}
 	virtual void SpecialKeyOperation(float elapsedTime) {}
 
-	virtual void UpdateScene(float elapsedTime) {}
+	virtual void UpdateScene(float elapsedTime, float* com_elapsedTime) {}
 	virtual void RendrScene() {}
 
 	virtual void CommunicationWithServer(LPVOID arg) {}
@@ -106,7 +106,7 @@ public:
 	virtual void SpecialKeyPressed(int key, int x, int y);
 	virtual void SpecialKeyUp(int key, int x, int y);
 
-	virtual void UpdateScene(float elapsedTime);
+	virtual void UpdateScene(float elapsedTime, float* com_elapsedTime);
 	virtual void RendrScene();
 
 	virtual void CommunicationWithServer(LPVOID arg);

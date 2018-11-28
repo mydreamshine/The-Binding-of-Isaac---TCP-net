@@ -16,11 +16,12 @@ CScene* g_pScene = nullptr;
 void RenderScene(void)
 {
 
-	static char m_pszFrameRate[50] = "The Binding of Isaac - Client (";
+	static char FrameAndCommunicationRate[70] = "The Binding of Isaac - Client (";
 
 	static DWORD g_PrevRenderTime = 0;
 	static DWORD cur_Time = 0;
-	static float eTime = 0.0f;
+	static float eTime = 0.0f, Communcation_eTime = 0.0f;
+	static size_t WndTitlelen;
 
 	if (g_PrevRenderTime == 0)
 		g_PrevRenderTime = timeGetTime();
@@ -34,11 +35,16 @@ void RenderScene(void)
 		glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
 		g_PrevRenderTime = cur_Time;
-		_itoa_s((int)(1.0f / eTime), m_pszFrameRate + 31, 19, 10);
-		strcat_s(m_pszFrameRate + 31, 19, " FPS)");
-		glutSetWindowTitle(m_pszFrameRate);
+		_itoa_s((int)(1.0f / eTime), FrameAndCommunicationRate + 31, 39, 10);
+		strcat_s(FrameAndCommunicationRate + 31, 39, " FPS, ");
 
-		g_pScene->UpdateScene(eTime);
+		g_pScene->UpdateScene(eTime, &Communcation_eTime);
+
+		WndTitlelen = strlen(FrameAndCommunicationRate);
+		_itoa_s((int)(1.0f / Communcation_eTime), FrameAndCommunicationRate + WndTitlelen, 70 - WndTitlelen, 10);
+		strcat_s(FrameAndCommunicationRate + WndTitlelen, 70 - WndTitlelen, " CPS)");
+
+		glutSetWindowTitle(FrameAndCommunicationRate);
 
 		g_pScene->RendrScene();
 

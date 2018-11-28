@@ -116,6 +116,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CGameObject.cpp" />
+    <ClCompile Include="CollisionFunc.cpp" />
     <ClCompile Include="GameProcessFunc.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ProcessThreads.cpp" />

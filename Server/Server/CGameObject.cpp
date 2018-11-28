@@ -1,5 +1,5 @@
 #include "CGameObject.h"
-
+#include <time.h>
 
 Player::Player()
 {
@@ -9,6 +9,20 @@ Player::Player()
 
 	ZeroMemory(m_KeyState, 256);
 	ZeroMemory(m_SpecialKeyState, 246);
+
+	m_HitDealay = 0;
+	m_StartHitDealay = clock();
+}
+
+void Player::InitHitDealay()
+{
+	m_StartHitDealay = clock();
+}
+
+bool Player::CheckHitDealayComplete()
+{
+	if (clock() - m_StartHitDealay >= m_HitDealay) return true;
+	return false;
 }
 
 void Player::Update(float ElapsedTime)

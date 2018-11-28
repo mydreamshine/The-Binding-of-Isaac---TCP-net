@@ -95,6 +95,7 @@ int GameProcessFunc::CreateNewPlayer()
 		PlayerBuffer[ClientID]->SetHeadPosition(newHeadPoint);
 		PlayerBuffer[ClientID]->SetSeqBody(newSeqBody);
 		PlayerBuffer[ClientID]->SetSeqHead(newSeqHead);
+		PlayerBuffer[ClientID]->InitHitDealay();
 	}
 
 	return ClientID;
@@ -335,54 +336,129 @@ void GameProcessFunc::ProcessPhisics(float ElapsedTime)
 
 void GameProcessFunc::ProcessCollision(float ElapsedTime)
 {
-	Point Pos;
-	fSIZE Size;
-	float WorldWidth = WND_WIDTH / RENDER_TRANSLATION_SCALE;
-	float WorldHeight = WND_HEIGHT / RENDER_TRANSLATION_SCALE;
-	float WorldLeftMargine = BACKGROUND_LEFT_MARGINE / RENDER_TRANSLATION_SCALE;
-	float WorldRightMargine = BACKGROUND_RIGHT_MARGINE / RENDER_TRANSLATION_SCALE;
-	float WorldUpMargine = BACKGROUND_UP_MARGINE / RENDER_TRANSLATION_SCALE;
-	float WorldDownMargine = BACKGROUND_DOWN_MARGINE / RENDER_TRANSLATION_SCALE;
+	static Point PlayerPos, BossPos, BulletPos;
+	static fRECT PlayerBoundRect, BossBoundRect, BulletBoundRect, LandBoundRect, intersectRect;
+	static const float WorldWidth = WND_WIDTH / RENDER_TRANSLATION_SCALE;
+	static const float WorldHeight = WND_HEIGHT / RENDER_TRANSLATION_SCALE;
+	static const float WorldLeftMargine = BACKGROUND_LEFT_MARGINE / RENDER_TRANSLATION_SCALE;
+	static const float WorldRightMargine = BACKGROUND_RIGHT_MARGINE / RENDER_TRANSLATION_SCALE;
+	static const float WorldUpMargine = BACKGROUND_UP_MARGINE / RENDER_TRANSLATION_SCALE;
+	static const float WorldDownMargine = BACKGROUND_DOWN_MARGINE / RENDER_TRANSLATION_SCALE;
+
+	// Set LandBoundary
+	LandBoundRect.Left = -WorldWidth / 2 + WorldLeftMargine;
+	LandBoundRect.Top = WorldHeight / 2 - WorldUpMargine;
+	LandBoundRect.Right = WorldWidth / 2 - WorldRightMargine;
+	LandBoundRect.Bottom = -WorldHeight / 2 + WorldDownMargine;
+
+	if (BossObj != NULL)
+	{
+		// Set BossBoundingRect
+		BossPos = BossObj->GetPosition();
+		float UnderOrdered_Offset_Y = -((BOSS_HEIGHT / 2) * 0.3f) * 0.5f;
+		// UnderOrdered_Offset_Y: 2차원 평면에서의 깊이감을 나타내기 위해 BoundingRect를 실제 크기보다 작게 하고 이를
+		// 실제 Bottom과 BoudingRect의 Bottom을 같게 아래쪽 맞춤으로 정렬함
+		BossBoundRect.Left = BossPos.x - BOSS_BOUNDINGBOX_WIDTH / 2;
+		BossBoundRect.Top = BossPos.z + BOSS_BOUNDINGBOX_HEIGHT / 2 + UnderOrdered_Offset_Y;
+		BossBoundRect.Right = BossPos.x + BOSS_BOUNDINGBOX_WIDTH / 2;
+		BossBoundRect.Bottom = BossPos.z - BOSS_BOUNDINGBOX_HEIGHT / 2 + UnderOrdered_Offset_Y;
+	}
 
 	for (int i = 0; i < MAX_CLIENT; ++i)
 	{
 		if (PlayerBuffer[i] != NULL)
 		{
-			Pos = PlayerBuffer[i]->GetBodyPosition();
-			Size.Width = PLAYER_WIDTH / 2;
-			Size.Height = PLAYER_HEIGHT / 2;
+			// Set PlayerBoundingRect
+			PlayerPos = PlayerBuffer[i]->GetBodyPosition();
+			PlayerBoundRect.Left = PlayerPos.x - PLAYER_BOUNDINGBOX_WIDTH / 2;
+			PlayerBoundRect.Top = PlayerPos.y + PLAYER_BOUNDINGBOX_HEIGHT / 2;
+			PlayerBoundRect.Right = PlayerPos.x + PLAYER_BOUNDINGBOX_WIDTH / 2;
+			PlayerBoundRect.Bottom = PlayerPos.y - PLAYER_BOUNDINGBOX_HEIGHT / 2;
 
 			// ProcessCollision Player-Wall
-			if (Pos.x - Size.Width / 2 < -WorldWidth / 2 + WorldLeftMargine// left
-				|| Pos.x + Size.Width / 2 > WorldWidth / 2 - WorldRightMargine// right
-				|| Pos.y - Size.Height / 2 < -WorldHeight / 2 + WorldDownMargine// down
-				|| Pos.y + Size.Height / 2 > WorldHeight / 2 - WorldUpMargine)// up
+			if (CollisionFunc::CollideWndBoundary(PlayerBoundRect, LandBoundRect))
 			{
-				Vector VerticalOfLine; // 직선에 수직인 벡터
-				if (Pos.x - Size.Width / 2 < -WorldWidth / 2 + WorldLeftMargine) // Collision left-side
+				Vector Wall_NormalVector; // 벽의 법선벡터
+				if (PlayerBoundRect.Left < LandBoundRect.Left) // Collision left-side
 				{
-					Pos.x = Size.Width / 2 - WorldWidth / 2 + WorldLeftMargine;
-					VerticalOfLine.i = 1;
+					PlayerPos.x += LandBoundRect.Left - PlayerBoundRect.Left;
+					Wall_NormalVector.i = 1;
 				}
-				if (Pos.x + Size.Width / 2 > WorldWidth / 2 - WorldRightMargine) // Collision right-side
+				if (PlayerBoundRect.Right > LandBoundRect.Right) // Collision right-side
 				{
-					Pos.x = WorldWidth / 2 - Size.Width / 2 - WorldRightMargine;
-					VerticalOfLine.i = -1;
+					PlayerPos.x += LandBoundRect.Right - PlayerBoundRect.Right;
+					Wall_NormalVector.i = -1;
 				}
-				if (Pos.y - Size.Height / 2 < -WorldHeight / 2 + WorldDownMargine) // Collision down-side
+				if (PlayerBoundRect.Bottom < LandBoundRect.Bottom) // Collision down-side
 				{
-					Pos.y = Size.Height / 2 - WorldHeight / 2 + WorldDownMargine;
-					VerticalOfLine.j = 1;
+					PlayerPos.y += LandBoundRect.Bottom - PlayerBoundRect.Bottom;
+					Wall_NormalVector.j = 1;
 				}
-				if (Pos.y + Size.Height / 2 > WorldHeight / 2 - WorldUpMargine) // Collision up-side
+				if (PlayerBoundRect.Top > LandBoundRect.Top) // Collision up-side
 				{
-					Pos.y = WorldHeight / 2 - Size.Height / 2 - WorldUpMargine;
-					VerticalOfLine.j = -1;
+					PlayerPos.y += LandBoundRect.Top - PlayerBoundRect.Top;
+					Wall_NormalVector.j = -1;
 				}
 				Vector Velocity = PlayerBuffer[i]->GetVelocity();
-				Velocity.slidingAbout(VerticalOfLine);
-				PlayerBuffer[i]->SetBodyPosition(Pos);
+				normalize(Wall_NormalVector); // 충돌 면이 2개 이상일 경우 정규기저벡터를 만들어줘야 한다.
+				Velocity.slidingAbout(Wall_NormalVector);
+				PlayerBuffer[i]->SetBodyPosition(PlayerPos);
 				PlayerBuffer[i]->SetVelocity(Velocity);
+			}
+
+			// ProcessCollision Player-Boss
+			if (BossObj != NULL)
+			{
+				if (CollisionFunc::IntersectRect(&intersectRect, PlayerBoundRect, BossBoundRect))
+				{
+					// 교차 영역 크기
+					float nInterWidth =  abs(intersectRect.Right - intersectRect.Left);
+					float nInterHeight = abs(intersectRect.Top - intersectRect.Bottom);
+
+					// Moved_BoundingRect: PlayerBoundRect
+					// Hold_BoundingRect: BossBoundRect
+
+					Vector PlayerVelocity = PlayerBuffer[i]->GetVelocity();
+
+					// 교차 너비 > 교차 높이: 위/아래에서부터 충돌이 이루어짐
+					if (nInterWidth > nInterHeight)
+					{
+						// Hold_BoundingRect의 윗부분 충돌
+						if (intersectRect.Top == BossBoundRect.Top)
+							PlayerPos.y += nInterHeight;
+						// Hold_BoundingRect의 아랫부분 충돌
+						else if (intersectRect.Bottom == BossBoundRect.Bottom)
+							PlayerPos.y -= nInterHeight;
+
+						// y축 방향 속도값 0으로 초기화
+						PlayerVelocity.j = 0;
+					}
+					// 교차 너비 < 교차 높이: 좌/우로부터 충돌이 이루어짐
+					else
+					{
+						// Hold_BoundingRect의 왼쪽부분 충돌
+						if (intersectRect.Left == BossBoundRect.Left)
+							PlayerPos.x -= nInterWidth;
+						// Hold_BoundingRect의 오른쪽부분 충돌
+						else if (intersectRect.Right == BossBoundRect.Right)
+							PlayerPos.x += nInterWidth;
+
+						// x축 방향 속도값 0으로 초기화
+						PlayerVelocity.i = 0;
+					}
+
+					PlayerBuffer[i]->SetBodyPosition(PlayerPos);
+					PlayerBuffer[i]->SetVelocity(PlayerVelocity);
+
+					// 피격당하는 딜레이 확인 후 체력 감소
+					if (PlayerBuffer[i]->CheckHitDealayComplete())
+					{
+						u_int PlayerHP = PlayerBuffer[i]->GetHP();
+						u_int newHP = (PlayerHP - BOSS_BULLET_DAMAGE > 0) ? PlayerHP - BOSS_BULLET_DAMAGE : 0;
+						PlayerBuffer[i]->SetHP(newHP);
+						PlayerBuffer[i]->InitHitDealay();
+					}
+				}
 			}
 
 		}
@@ -392,52 +468,17 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 	{
 		if (BulletBuffer[i] != NULL)
 		{
-			Pos = BulletBuffer[i]->GetPosition();
-			Size.Width = BULLET_WIDTH;
-			Size.Height = BULLET_HEIGHT;
+			BulletPos = BulletBuffer[i]->GetPosition();
+			BulletBoundRect.Left   = BulletPos.x - BULLET_BOUNDINGBOX_WIDTH / 2;
+			BulletBoundRect.Top    = BulletPos.y + PLAYER_BOUNDINGBOX_HEIGHT / 2;
+			BulletBoundRect.Right  = BulletPos.x + PLAYER_BOUNDINGBOX_WIDTH / 2;
+			BulletBoundRect.Bottom = BulletPos.y - PLAYER_BOUNDINGBOX_HEIGHT / 2;
 
 			// ProcessCollision Wall-Bullet
-			if (Pos.x - Size.Width / 2 < -WorldWidth / 2 + WorldLeftMargine// left
-				|| Pos.x + Size.Width / 2 > WorldWidth / 2 - WorldRightMargine// right
-				|| Pos.y - Size.Height / 2 < -WorldHeight / 2 + WorldDownMargine// down
-				|| Pos.y + Size.Height / 2 > WorldHeight / 2 - WorldUpMargine)// up
+			if (CollisionFunc::CollideWndBoundary(BulletBoundRect, LandBoundRect))
 			{
-				if (BulletBuffer[i]->GetPossesion() || BulletBuffer[i]->GetReflectCnt() == MAX_BULLET_REFLECT_COUNT)
-				{
-					delete BulletBuffer[i];
-					BulletBuffer[i] = NULL;
-				}
-				else // 보스가 발사하는 눈물에 대해서는 MAX_BULLET_REFLECT_COUNT만큼 튕겨나갈 수 있음
-				{
-					Vector VerticalOfLine; // 직선에 수직인 벡터
-					if (Pos.x - Size.Width / 2 < -WorldWidth / 2 + WorldLeftMargine) // Collision left-side
-					{
-						Pos.x = Size.Width / 2 - WorldWidth / 2 + WorldLeftMargine;
-						VerticalOfLine.i = 1;
-					}
-					if (Pos.x + Size.Width / 2 > WorldWidth / 2 - WorldRightMargine) // Collision right-side
-					{
-						Pos.x = WorldWidth / 2 - Size.Width / 2 - WorldRightMargine;
-						VerticalOfLine.i = -1;
-					}
-					if (Pos.y - Size.Height / 2 < -WorldHeight / 2 + WorldDownMargine) // Collision down-side
-					{
-						Pos.y = Size.Height / 2 - WorldHeight / 2 + WorldDownMargine;
-						VerticalOfLine.j = 1;
-					}
-					if (Pos.y + Size.Height / 2 > WorldHeight / 2 - WorldUpMargine) // Collision up-side
-					{
-						Pos.y = WorldHeight / 2 - Size.Height / 2 - WorldUpMargine;
-						VerticalOfLine.j = -1;
-					}
-					Vector Velocity = BulletBuffer[i]->GetVelocity();
-					Vector ReflectionVelocity = Velocity.reflectionAbout(VerticalOfLine);
-					u_short ReflectCnt = BulletBuffer[i]->GetReflectCnt();
-					ReflectCnt++;
-					BulletBuffer[i]->SetPosition(Pos);
-					BulletBuffer[i]->SetVelocity(ReflectionVelocity);
-					BulletBuffer[i]->SetReflectCnt(ReflectCnt);
-				}
+				delete BulletBuffer[i];
+				BulletBuffer[i] = NULL;
 			}
 		}
 	}

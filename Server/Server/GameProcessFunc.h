@@ -1,6 +1,13 @@
 #pragma once
 #include "CGameObject.h"
 
+///////////////////////////////////  Collision Function  //////////////////////////////////
+namespace CollisionFunc
+{
+	bool IntersectRect(fRECT* intersectRect, fRECT& Rect1, fRECT& Rect2);
+	bool CollideWndBoundary(fRECT& ObjRect, fRECT& WndBoundary);
+}
+
 
 /////////////////////////////////  Game Process Function  /////////////////////////////////
 namespace GameProcessFunc

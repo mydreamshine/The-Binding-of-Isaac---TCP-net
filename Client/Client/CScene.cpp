@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "CScene.h"
 #include <thread>
+#include <time.h>
+#include <timeapi.h>
 
 using namespace std;
 
@@ -64,7 +66,7 @@ void CPlayScene::SpecialKeyUp(int key, int x, int y)
 	m_SpecialKeyState[key] = false;
 }
 
-void CPlayScene::UpdateScene(float elapsedTime)
+void CPlayScene::UpdateScene(float elapsedTime, float* com_elapsedTime)
 {
 	//업데이트에서 일정 시간마다 서버와의 통신 스레드를 부르도록 설정
 
@@ -78,6 +80,14 @@ void CPlayScene::UpdateScene(float elapsedTime)
 
 		//통신이 완료 될 때 까지 기다림
 		WaitForSingleObject(hCompleteCommunicaitionEvent, INFINITE);
+
+		static DWORD PrevComTime = 0;
+		static DWORD Cur_ComTime = 0;
+		if (PrevComTime == 0)
+			PrevComTime = timeGetTime();
+		Cur_ComTime = timeGetTime();
+		*com_elapsedTime = (float)(Cur_ComTime - PrevComTime) / 1000.0f;
+		PrevComTime = Cur_ComTime;
 
 		//커뮤니케이션 시간이 지난 시간을 초기화
 		communication_eTime = 0;

@@ -45,6 +45,9 @@ private:
 	bool      m_KeyState[256];
 	bool      m_SpecialKeyState[246];
 	list<int> m_ArrowKeyStack;
+
+	long      m_HitDealay; //millisecond
+	long      m_StartHitDealay;
 public:
 	Player();
 	~Player() = default;
@@ -67,6 +70,10 @@ public:
 	bool * GetKeyBuffer()                     { return m_KeyState; }
 	bool * GetSpecialKeyBuffer()              { return m_SpecialKeyState; }
 	list<int>* GetArrowKeyStack()             { return &m_ArrowKeyStack; }
+
+	void SetHitDealay(long newHitDealay)       { m_HitDealay = newHitDealay; }
+	void InitHitDealay();
+	bool CheckHitDealayComplete();
 
 	void Update(float ElapsedTime);
 	void ApplyForce(Vector Force, float ElapsedTime);

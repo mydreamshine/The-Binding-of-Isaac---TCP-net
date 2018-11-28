@@ -46,8 +46,8 @@ private:
 	bool      m_SpecialKeyState[246];
 	list<int> m_ArrowKeyStack;
 
-	long      m_HitDealay; //millisecond
-	long      m_StartHitDealay;
+	unsigned long m_HitDealay; //millisecond
+	unsigned long m_StartHitDealay;
 public:
 	Player();
 	~Player() = default;
@@ -71,7 +71,7 @@ public:
 	bool * GetSpecialKeyBuffer()              { return m_SpecialKeyState; }
 	list<int>* GetArrowKeyStack()             { return &m_ArrowKeyStack; }
 
-	void SetHitDealay(long newHitDealay)       { m_HitDealay = newHitDealay; }
+	void SetHitDealay(unsigned long newHitDealay)       { m_HitDealay = newHitDealay; }
 	void InitHitDealay();
 	bool CheckHitDealayComplete();
 
@@ -106,6 +106,8 @@ public:
 	void SetPosition(Point newPoint) { m_Position = newPoint; }
 	void SetVelocity(Vector nweVelocity) { m_Velocity = nweVelocity; }
 	void SetPos_InTexture(POINT newPoint) { m_Pos_InTexture = newPoint; }
+	void SetPos_InTextureX(LONG texX) { m_Pos_InTexture.x = texX; }
+	void SetPos_InTextureY(LONG texY) { m_Pos_InTexture.y = texY; }
 	void SetPattern(short pattern) { m_Pattern = pattern; }
 	void SetEtime(float Etime) { m_Etime = Etime; }
 	void SetPatternInit(bool PatternInit) { m_PatternInit = PatternInit; }
@@ -114,6 +116,8 @@ public:
 	Point  GetPosition() { return m_Position; }
 	Vector GetVelocity() { return m_Velocity; }
 	POINT  GetPos_InTexture() { return m_Pos_InTexture; }
+	LONG   GetPos_InTextureX() { return m_Pos_InTexture.x; }
+	LONG   GetPos_InTextureY() { return m_Pos_InTexture.y; }
 	short  GetPattern() { return m_Pattern; }
 	float  GetEtime() { return m_Etime; }
 	bool   GetPatternInit() { return m_PatternInit; }

@@ -85,7 +85,7 @@ int GameProcessFunc::CreateNewPlayer()
 		// Player 초기 속성값 지정
 		u_int newHP = PLAYER_INIT_HP;
 		Point newBodyPoint = { 0,0,0 };
-		Point newHeadPoint = { newBodyPoint.x+0.041f, newBodyPoint.y+0.209f,newBodyPoint.z };
+		Point newHeadPoint = { newBodyPoint.x + PLAYER_HEAD_OFFSET_X, newBodyPoint.y + PLAYER_HEAD_OFFSET_Y, newBodyPoint.z };
 		POINT newSeqBody = { 0,0 };
 		POINT newSeqHead = { 0,0 };
 
@@ -95,6 +95,7 @@ int GameProcessFunc::CreateNewPlayer()
 		PlayerBuffer[ClientID]->SetHeadPosition(newHeadPoint);
 		PlayerBuffer[ClientID]->SetSeqBody(newSeqBody);
 		PlayerBuffer[ClientID]->SetSeqHead(newSeqHead);
+		PlayerBuffer[ClientID]->SetHitDealay(PLAYER_HIT_DEALAY);
 		PlayerBuffer[ClientID]->InitHitDealay();
 	}
 
@@ -355,13 +356,28 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 	{
 		// Set BossBoundingRect
 		BossPos = BossObj->GetPosition();
-		float UnderOrdered_Offset_Y = -((BOSS_HEIGHT / 2) * 0.3f) * 0.5f;
+		float UnderOrdered_Offset_Y = -((BOSS_HEIGHT / 2) - BOSS_BOUNDINGBOX_HEIGHT) * 0.5f;
 		// UnderOrdered_Offset_Y: 2차원 평면에서의 깊이감을 나타내기 위해 BoundingRect를 실제 크기보다 작게 하고 이를
 		// 실제 Bottom과 BoudingRect의 Bottom을 같게 아래쪽 맞춤으로 정렬함
 		BossBoundRect.Left = BossPos.x - BOSS_BOUNDINGBOX_WIDTH / 2;
-		BossBoundRect.Top = BossPos.z + BOSS_BOUNDINGBOX_HEIGHT / 2 + UnderOrdered_Offset_Y;
+		BossBoundRect.Top = BossPos.y + BOSS_BOUNDINGBOX_HEIGHT / 2 + UnderOrdered_Offset_Y;
 		BossBoundRect.Right = BossPos.x + BOSS_BOUNDINGBOX_WIDTH / 2;
-		BossBoundRect.Bottom = BossPos.z - BOSS_BOUNDINGBOX_HEIGHT / 2 + UnderOrdered_Offset_Y;
+		BossBoundRect.Bottom = BossPos.y - BOSS_BOUNDINGBOX_HEIGHT / 2 + UnderOrdered_Offset_Y;
+
+		// ProcessCollision Wall-Boss
+		if (CollisionFunc::CollideWndBoundary(BossBoundRect, LandBoundRect))
+		{
+			if (BossBoundRect.Left < LandBoundRect.Left) // Collision left-side
+				BossPos.x += LandBoundRect.Left - BossBoundRect.Left;
+			if (BossBoundRect.Right > LandBoundRect.Right) // Collision right-side
+				BossPos.x += LandBoundRect.Right - BossBoundRect.Right;
+			if (BossBoundRect.Bottom < LandBoundRect.Bottom) // Collision down-side
+				BossPos.y += LandBoundRect.Bottom - BossBoundRect.Bottom;
+			if (BossBoundRect.Top > LandBoundRect.Top) // Collision up-side
+				BossPos.y += LandBoundRect.Top - BossBoundRect.Top;
+
+			BossObj->SetPosition(BossPos);
+		}
 	}
 
 	for (int i = 0; i < MAX_CLIENT; ++i)
@@ -409,63 +425,67 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 			// ProcessCollision Player-Boss
 			if (BossObj != NULL)
 			{
-				if (CollisionFunc::IntersectRect(&intersectRect, PlayerBoundRect, BossBoundRect))
+				if (equal(BossPos.z, 0.0f))
 				{
-					// 교차 영역 크기
-					float nInterWidth =  abs(intersectRect.Right - intersectRect.Left);
-					float nInterHeight = abs(intersectRect.Top - intersectRect.Bottom);
-
-					// Moved_BoundingRect: PlayerBoundRect
-					// Hold_BoundingRect: BossBoundRect
-
-					Vector PlayerVelocity = PlayerBuffer[i]->GetVelocity();
-
-					// 교차 너비 > 교차 높이: 위/아래에서부터 충돌이 이루어짐
-					if (nInterWidth > nInterHeight)
+					if (CollisionFunc::IntersectRect(&intersectRect, PlayerBoundRect, BossBoundRect))
 					{
-						// Hold_BoundingRect의 윗부분 충돌
-						if (intersectRect.Top == BossBoundRect.Top)
-							PlayerPos.y += nInterHeight;
-						// Hold_BoundingRect의 아랫부분 충돌
-						else if (intersectRect.Bottom == BossBoundRect.Bottom)
-							PlayerPos.y -= nInterHeight;
+						// 교차 영역 크기
+						float nInterWidth = abs(intersectRect.Right - intersectRect.Left);
+						float nInterHeight = abs(intersectRect.Top - intersectRect.Bottom);
 
-						// y축 방향 속도값 0으로 초기화
-						PlayerVelocity.j = 0;
-					}
-					// 교차 너비 < 교차 높이: 좌/우로부터 충돌이 이루어짐
-					else
-					{
-						// Hold_BoundingRect의 왼쪽부분 충돌
-						if (intersectRect.Left == BossBoundRect.Left)
-							PlayerPos.x -= nInterWidth;
-						// Hold_BoundingRect의 오른쪽부분 충돌
-						else if (intersectRect.Right == BossBoundRect.Right)
-							PlayerPos.x += nInterWidth;
+						// Moved_BoundingRect: PlayerBoundRect
+						// Hold_BoundingRect: BossBoundRect
 
-						// x축 방향 속도값 0으로 초기화
-						PlayerVelocity.i = 0;
-					}
+						Vector PlayerVelocity = PlayerBuffer[i]->GetVelocity();
 
-					PlayerBuffer[i]->SetBodyPosition(PlayerPos);
-					PlayerBuffer[i]->SetVelocity(PlayerVelocity);
+						// 교차 너비 > 교차 높이: 위/아래에서부터 충돌이 이루어짐
+						if (nInterWidth > nInterHeight)
+						{
+							// Hold_BoundingRect의 윗부분 충돌
+							if (intersectRect.Top == BossBoundRect.Top)
+								PlayerPos.y += nInterHeight;
+							// Hold_BoundingRect의 아랫부분 충돌
+							else if (intersectRect.Bottom == BossBoundRect.Bottom)
+								PlayerPos.y -= nInterHeight;
 
-					// 피격당하는 딜레이 확인 후 체력 감소
-					if (PlayerBuffer[i]->CheckHitDealayComplete())
-					{
-						u_int PlayerHP = PlayerBuffer[i]->GetHP();
-						u_int newHP = (PlayerHP - BOSS_BULLET_DAMAGE > 0) ? PlayerHP - BOSS_BULLET_DAMAGE : 0;
-						PlayerBuffer[i]->SetHP(newHP);
-						PlayerBuffer[i]->InitHitDealay();
+							// y축 방향 속도값 0으로 초기화
+							PlayerVelocity.j = 0;
+						}
+						// 교차 너비 < 교차 높이: 좌/우로부터 충돌이 이루어짐
+						else
+						{
+							// Hold_BoundingRect의 왼쪽부분 충돌
+							if (intersectRect.Left == BossBoundRect.Left)
+								PlayerPos.x -= nInterWidth;
+							// Hold_BoundingRect의 오른쪽부분 충돌
+							else if (intersectRect.Right == BossBoundRect.Right)
+								PlayerPos.x += nInterWidth;
+
+							// x축 방향 속도값 0으로 초기화
+							PlayerVelocity.i = 0;
+						}
+
+						PlayerBuffer[i]->SetBodyPosition(PlayerPos);
+						PlayerBuffer[i]->SetVelocity(PlayerVelocity);
+
+						// 피격당하는 딜레이 확인 후 체력 감소
+						if (PlayerBuffer[i]->CheckHitDealayComplete())
+						{
+							u_int PlayerHP = PlayerBuffer[i]->GetHP();
+							u_int newHP = ((int)PlayerHP - BOSS_BULLET_DAMAGE > 0) ? PlayerHP - BOSS_BULLET_DAMAGE : 0;
+							PlayerBuffer[i]->SetHP(newHP);
+							PlayerBuffer[i]->InitHitDealay();
+						}
 					}
 				}
 			}
-
 		}
 	}
 
+	bool DeleteBullet = false;
 	for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
 	{
+		DeleteBullet = false;
 		if (BulletBuffer[i] != NULL)
 		{
 			BulletPos = BulletBuffer[i]->GetPosition();
@@ -474,8 +494,64 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 			BulletBoundRect.Right  = BulletPos.x + PLAYER_BOUNDINGBOX_WIDTH / 2;
 			BulletBoundRect.Bottom = BulletPos.y - PLAYER_BOUNDINGBOX_HEIGHT / 2;
 
-			// ProcessCollision Wall-Bullet
+			// ProcessCollision Bullet-Wall
 			if (CollisionFunc::CollideWndBoundary(BulletBoundRect, LandBoundRect))
+				DeleteBullet = true;
+
+			// ProcessCollision Bullet-Boss
+			if (BossObj != NULL && BulletBuffer[i]->GetPossesion() == true)
+			{
+				if (equal(BossPos.z, 0.0f))
+				{
+					if (CollisionFunc::IntersectRect(&intersectRect, BulletBoundRect, BossBoundRect))
+					{
+						// 넉백 및 HP 감소
+						BossPos += BulletBuffer[i]->GetVelocity() / RENDER_TRANSLATION_SCALE;
+						u_int BossHP = BossObj->GetHP();
+						u_int newHP = ((int)BossHP - PLAYER_BULLET_DAMAGE > 0) ? BossHP - PLAYER_BULLET_DAMAGE : 0;
+						BossObj->SetPosition(BossPos);
+						BossObj->SetHP(newHP);
+						std::cout << "Boss HP: " << newHP << std::endl;
+						DeleteBullet = true;
+					}
+				}
+			}
+
+			// ProcessCollision Bullet-Player
+			if (BulletBuffer[i]->GetPossesion() == false)
+			{
+				for (int j = 0; j < MAX_CLIENT; ++j)
+				{
+					if (PlayerBuffer[j] != NULL)
+					{
+						// Set PlayerBoundingRect
+						PlayerPos = PlayerBuffer[j]->GetBodyPosition();
+						PlayerBoundRect.Left = PlayerPos.x - PLAYER_BOUNDINGBOX_WIDTH / 2;
+						PlayerBoundRect.Top = PlayerPos.y + PLAYER_BOUNDINGBOX_HEIGHT / 2;
+						PlayerBoundRect.Right = PlayerPos.x + PLAYER_BOUNDINGBOX_WIDTH / 2;
+						PlayerBoundRect.Bottom = PlayerPos.y - PLAYER_BOUNDINGBOX_HEIGHT / 2;
+
+						if (CollisionFunc::IntersectRect(&intersectRect, BulletBoundRect, PlayerBoundRect))
+						{
+							// 넉백
+							PlayerPos += BulletBuffer[i]->GetVelocity() / RENDER_TRANSLATION_SCALE;
+							PlayerBuffer[j]->SetBodyPosition(PlayerPos);
+							// 피격당하는 딜레이 확인 후 체력 감소
+							if (PlayerBuffer[j]->CheckHitDealayComplete())
+							{
+								u_int PlayerHP = PlayerBuffer[j]->GetHP();
+								u_int newHP = ((int)PlayerHP - BOSS_BULLET_DAMAGE > 0) ? PlayerHP - BOSS_BULLET_DAMAGE : 0;
+								PlayerBuffer[j]->SetHP(newHP);
+								PlayerBuffer[j]->InitHitDealay();
+								std::cout << "Player[" << j << "] HP: " << newHP << std::endl;
+							}
+							DeleteBullet = true;
+						}
+					}
+				}
+			}
+
+			if (DeleteBullet == true)
 			{
 				delete BulletBuffer[i];
 				BulletBuffer[i] = NULL;
@@ -679,6 +755,8 @@ void GameProcessFunc::BossPattern(float ElapsedTime)
 	}
 }
 
+Vector Direction;
+
 void GameProcessFunc::BossJump(float ElapsedTime)
 {
 	if (BossObj == NULL) return;
@@ -693,33 +771,42 @@ void GameProcessFunc::BossJump(float ElapsedTime)
 
 	total_eTime += ElapsedTime;
 
-	Vector Direction;
-
 	if (BossObj->GetPatternInit()) {
-		Direction = BossGetDirectirion();
+		Direction = BossGetDirectirion() * moveforce;
 		BossObj->SetPatternInit(false);
-		BossObj->SetVelocity(Direction);
+		//std::cout << "INIT Velocity : " << "(" << Direction.i << "," << Direction.j << "," << Direction.k << ")" << std::endl;
 	}
 
 	if (total_eTime >= 0.0f && total_eTime < 1.0f) {
-		BossObj->SetPos_InTexture(POINT{ 7,0 });
+		BossObj->SetPos_InTextureX(7);
+		if (Direction.i <= 0)
+			BossObj->SetPos_InTextureY(0);
+		else
+			BossObj->SetPos_InTextureY(1);
+
 		ps.z = -jumpforce * ((total_eTime * total_eTime) - total_eTime + 0.25f) + 2;
 		if (ps.z >= 0) {
+			Direction.k = -jumpforce * (2 * total_eTime - 1);
+			BossObj->SetVelocity(Direction);
 			ps.x = ps.x + (BossObj->GetVelocity().i * ElapsedTime * moveforce);
 			ps.y = ps.y + (BossObj->GetVelocity().j * ElapsedTime * moveforce);
+
+			//std::cout << "Etime : " << total_eTime << " / 보스 위치 : (" << ps.x << "," << ps.y << "," << ps.z << ")" << " / 보스 속도 : (" << Direction.i << "," << Direction.j << "," << Direction.k << ")" << std::endl;
 		}
-		if (ps.z < 0) {
+		else {
+			BossObj->SetVelocity(Vector(0, 0, 0));
 			ps.z = 0;
 		}
 
-		//std::cout << "Etime : " << total_eTime << " / 보스 위치 : (" << ps.x << "," << ps.y <<"," << ps.z << ")" << std::endl;
+
 	}
 	else if (total_eTime >= 1.0f && total_eTime < 1.5f) {
-		BossObj->SetPos_InTexture(POINT{ 8,0 });
+		BossObj->SetVelocity(Vector(0, 0, 0));
+		BossObj->SetPos_InTextureX(8);
 		ps.z = 0;
 	}
 	else if (total_eTime >= 1.5f && total_eTime < 2.0f) {
-		BossObj->SetPos_InTexture(POINT{ 2,0 });
+		BossObj->SetPos_InTextureX(2);
 		ps.z = 0;
 	}
 	else {
@@ -746,45 +833,65 @@ void GameProcessFunc::BossHighJump(float ElapsedTime)
 	total_eTime += ElapsedTime;
 
 	if (total_eTime >= 0.f && total_eTime < 0.75f) {
-		BossObj->SetPos_InTexture(POINT{ 4,0 });
+		BossObj->SetPos_InTextureX(4);
+
+		Direction = BossObj->GetVelocity();
+		Direction.k = -jumpforce * (2 * total_eTime + 1.5f);
+
+		BossObj->SetVelocity(Direction);
 		ps.z = -jumpforce * (total_eTime * (total_eTime - 1.5f));
 
-		if (ps.z < 0)
+		if (ps.z < 0) {
+			BossObj->SetVelocity(Vector(0, 0, 0));
 			ps.z = 0;
+		}
 
 		BossObj->SetPatternInit(true);
 	}
 	else if (total_eTime >= 0.75f && total_eTime < 1.5f) {
-		BossObj->SetPos_InTexture(POINT{ 6,0 });
+		BossObj->SetPos_InTextureX(6);
+
+		Direction = BossObj->GetVelocity();
+		Direction.k = -jumpforce * (2 * total_eTime - 1.5f);
+
+		BossObj->SetVelocity(Direction);
 		ps.z = -jumpforce * (total_eTime * (total_eTime - 1.5f));
-		
+
 		if (BossObj->GetPatternInit()) {
 			Point newPoint = BossGetPoint();
+			if (newPoint.x < ps.x)
+				BossObj->SetPos_InTextureY(0);
+			else
+				BossObj->SetPos_InTextureY(1);
+
 			ps.x = newPoint.x;
 			ps.y = newPoint.y;
 			BossObj->SetPatternInit(false);
 		}
 
-		if (ps.z < 0)
+		if (ps.z < 0) {
+			BossObj->SetVelocity(Vector(0, 0, 0));
 			ps.z = 0;
+		}
 	}
 	else if (total_eTime >= 1.5f && total_eTime < 1.7f) {
-		BossObj->SetPos_InTexture(POINT{ 5,0 });
+		BossObj->SetPos_InTextureX(5);
+		BossObj->SetVelocity(Vector(0, 0, 0));
 		ps.z = 0;
 
 		BossObj->SetPatternInit(true);
 	}
 	else if (total_eTime >= 1.7f && total_eTime < 2.2f) {
-		BossObj->SetPos_InTexture(POINT{ 8,0 });
+		BossObj->SetPos_InTextureX(8);
 		ps.z = 0;
 
 		if (BossObj->GetPatternInit()) {
-			BulletShoot(false, BossObj->GetPosition(), Vector(0, 0, 0), SHOOT_PATTERN_2);
+			BulletShoot(false, BossObj->GetPosition(), Vector(0, 0, 0), SHOOT_PATTERN_3);
 			BossObj->SetPatternInit(false);
 		}
 	}
 	else if (total_eTime >= 2.2f && total_eTime < 2.7f) {
-		BossObj->SetPos_InTexture(POINT{ 2,0 });
+		BossObj->SetPos_InTextureX(2);
 		ps.z = 0;
 	}
 	else {
@@ -807,16 +914,25 @@ void GameProcessFunc::BossShoot(float ElapsedTime)
 
 	total_eTime += ElapsedTime;
 
+	Point newTarget = BossGetPoint();
+
 	if (total_eTime >= 0.f && total_eTime < 0.5f) {
-		BossObj->SetPos_InTexture(POINT{ 1,0 });
+		BossObj->SetPos_InTextureX(1);
+		if (BossObj->GetPosition().x > newTarget.x)
+			BossObj->SetPos_InTextureY(0);
+		else
+			BossObj->SetPos_InTextureY(1);
 		BossObj->SetPatternInit(true);
 	}
 	else if (total_eTime >= 0.5f && total_eTime < 1.5f) {
-		BossObj->SetPos_InTexture(POINT{ 3,0 });
+		BossObj->SetPos_InTextureX(3);
 
 		if (total_eTime >= 0.6f) {
 			if (BossObj->GetPatternInit()) {
-				BulletShoot(false, BossObj->GetPosition(), Vector(0, 0, 0), SHOOT_PATTERN_1);
+				if (BossObj->GetPos_InTextureY() == 0)
+					BulletShoot(false, BossObj->GetPosition(), Vector(0, 0, 0), SHOOT_PATTERN_2);
+				if (BossObj->GetPos_InTextureY() == 1)
+					BulletShoot(false, BossObj->GetPosition(), Vector(0, 0, 0), SHOOT_PATTERN_1);
 				BossObj->SetPatternInit(false);
 			}
 		}
@@ -824,7 +940,7 @@ void GameProcessFunc::BossShoot(float ElapsedTime)
 		// std::cout << "Attack!!!" << "(" << vX << "," << vY << ")" << std::endl;
 	}
 	else if (total_eTime >= 1.5f && total_eTime < 2.0f) {
-		BossObj->SetPos_InTexture(POINT{ 2,0 });
+		BossObj->SetPos_InTextureX(2);
 		// std::cout << "Attack!!!" << "(" << vX << "," << vY << ")" << std::endl;
 	}
 	else {
@@ -836,7 +952,7 @@ void GameProcessFunc::BossShoot(float ElapsedTime)
 
 Vector GameProcessFunc::BossGetDirectirion()
 {
-	Vector min_direction = {100, 100, 100};
+	Vector min_direction = { 100, 100, 100 };
 
 	Point BossPosition = BossObj->GetPosition();
 	BossPosition.z = 0;

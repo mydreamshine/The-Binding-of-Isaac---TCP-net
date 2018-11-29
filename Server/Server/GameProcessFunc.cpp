@@ -17,8 +17,8 @@ GameObject 설명																						     //
 */																										 //
 Player * PlayerBuffer[MAX_CLIENT];																		 //
 Boss   * BossObj = NULL;																				 //
-Bullet * BulletBuffer[MAX_OBJECT - (MAX_CLIENT*2 + 1)]; // Bullet Count: Max_Object - Max_Client*2 - Max_Boss //
-																										 //
+PressurePlate * PressurePlateBuffer[MAX_CLIENT];														 //
+Bullet * BulletBuffer[MAX_BULLET];																		 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -30,6 +30,8 @@ void GameProcessFunc::InitGameObject()
 		{
 			delete PlayerBuffer[i];
 			PlayerBuffer[i] = NULL;
+			delete PressurePlateBuffer[i];
+			PressurePlateBuffer[i] = NULL;
 		}
 	}
 
@@ -39,7 +41,7 @@ void GameProcessFunc::InitGameObject()
 		BossObj = NULL;
 	}
 
-	for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+	for (int i = 0; i < MAX_BULLET; ++i)
 	{
 		if (BulletBuffer[i] != NULL)
 		{
@@ -97,6 +99,14 @@ int GameProcessFunc::CreateNewPlayer()
 		PlayerBuffer[ClientID]->SetSeqHead(newSeqHead);
 		PlayerBuffer[ClientID]->SetHitDealay(PLAYER_HIT_DEALAY);
 		PlayerBuffer[ClientID]->InitHitDealay();
+
+		Point newPoint;
+		POINT newSeq = { 0, 0 };
+		newPoint.x = (ClientID % 2 == 0) ? -3.2f : 3.2f;
+		newPoint.y = (ClientID < 2) ? 1.5f : -1.5f;
+		PressurePlateBuffer[ClientID] = new PressurePlate();
+		PressurePlateBuffer[ClientID]->SetPosition(newPoint);
+		PressurePlateBuffer[ClientID]->SetPos_InTexture(newSeq);
 	}
 
 	return ClientID;
@@ -122,6 +132,8 @@ bool GameProcessFunc::RecvInput(SOCKET sock, int ClientID)
 	{
 		delete PlayerBuffer[ClientID];
 		PlayerBuffer[ClientID] = NULL;
+		delete PressurePlateBuffer[ClientID];
+		PressurePlateBuffer[ClientID] = NULL;
 		err_display((char*)"recv()");
 		return false;
 	}
@@ -132,6 +144,8 @@ bool GameProcessFunc::RecvInput(SOCKET sock, int ClientID)
 	{
 		delete PlayerBuffer[ClientID];
 		PlayerBuffer[ClientID] = NULL;
+		delete PressurePlateBuffer[ClientID];
+		PressurePlateBuffer[ClientID] = NULL;
 		err_display((char*)"recv()");
 		return false;
 	}
@@ -183,6 +197,8 @@ bool GameProcessFunc::SendCommunicationData(SOCKET sock, int ClientID)
 	{
 		delete PlayerBuffer[ClientID];
 		PlayerBuffer[ClientID] = NULL;
+		delete PressurePlateBuffer[ClientID];
+		PressurePlateBuffer[ClientID] = NULL;
 		err_display((char*)"send()");
 		return false;
 	}
@@ -328,7 +344,7 @@ void GameProcessFunc::ProcessPhisics(float ElapsedTime)
 	if (BossObj != NULL)
 			BossPattern(ElapsedTime);
 
-	for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+	for (int i = 0; i < MAX_BULLET; ++i)
 	{
 		if (BulletBuffer[i] != NULL)
 			BulletBuffer[i]->Update(ElapsedTime);
@@ -337,8 +353,8 @@ void GameProcessFunc::ProcessPhisics(float ElapsedTime)
 
 void GameProcessFunc::ProcessCollision(float ElapsedTime)
 {
-	static Point PlayerPos, BossPos, BulletPos;
-	static fRECT PlayerBoundRect, BossBoundRect, BulletBoundRect, LandBoundRect, intersectRect;
+	static Point PlayerPos, BossPos, PressurePlatePos, BulletPos;
+	static fRECT PlayerBoundRect, BossBoundRect, PressurePlateBoundRect, BulletBoundRect, LandBoundRect, intersectRect;
 	static const float WorldWidth = WND_WIDTH / RENDER_TRANSLATION_SCALE;
 	static const float WorldHeight = WND_HEIGHT / RENDER_TRANSLATION_SCALE;
 	static const float WorldLeftMargine = BACKGROUND_LEFT_MARGINE / RENDER_TRANSLATION_SCALE;
@@ -356,7 +372,7 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 	{
 		// Set BossBoundingRect
 		BossPos = BossObj->GetPosition();
-		float UnderOrdered_Offset_Y = -((BOSS_HEIGHT / 2) - BOSS_BOUNDINGBOX_HEIGHT) * 0.5f;
+		float UnderOrdered_Offset_Y = -((BOSS_HEIGHT * 0.5f) - BOSS_BOUNDINGBOX_HEIGHT) * 0.4f;
 		// UnderOrdered_Offset_Y: 2차원 평면에서의 깊이감을 나타내기 위해 BoundingRect를 실제 크기보다 작게 하고 이를
 		// 실제 Bottom과 BoudingRect의 Bottom을 같게 아래쪽 맞춤으로 정렬함
 		BossBoundRect.Left = BossPos.x - BOSS_BOUNDINGBOX_WIDTH / 2;
@@ -422,6 +438,26 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 				PlayerBuffer[i]->SetVelocity(Velocity);
 			}
 
+			// ProcessCollision Player-PressurePlate
+			for (int j = 0; j < MAX_CLIENT; ++j)
+			{
+				if (PressurePlateBuffer[j] != NULL)
+				{
+					if (!PressurePlateBuffer[j]->CheckPressed())
+					{
+						// Set PressurePlateBoundingRect
+						PressurePlatePos = PressurePlateBuffer[j]->GetPosition();
+						PressurePlateBoundRect.Left = PressurePlatePos.x - PRESSURE_PLATE_BOUNDINGBOX_WIDTH / 2;
+						PressurePlateBoundRect.Top = PressurePlatePos.y + PRESSURE_PLATE_BOUNDINGBOX_HEIGHT / 2;
+						PressurePlateBoundRect.Right = PressurePlatePos.x + PRESSURE_PLATE_BOUNDINGBOX_WIDTH / 2;
+						PressurePlateBoundRect.Bottom = PressurePlatePos.y - PRESSURE_PLATE_BOUNDINGBOX_HEIGHT / 2;
+
+						if (CollisionFunc::IntersectRect(&intersectRect, PlayerBoundRect, PressurePlateBoundRect))
+							PressurePlateBuffer[j]->SetPos_InTexture({ 1, 0 });
+					}
+				}
+			}
+
 			// ProcessCollision Player-Boss
 			if (BossObj != NULL)
 			{
@@ -483,7 +519,7 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 	}
 
 	bool DeleteBullet = false;
-	for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+	for (int i = 0; i < MAX_BULLET; ++i)
 	{
 		DeleteBullet = false;
 		if (BulletBuffer[i] != NULL)
@@ -534,7 +570,7 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 						if (CollisionFunc::IntersectRect(&intersectRect, BulletBoundRect, PlayerBoundRect))
 						{
 							// 넉백
-							PlayerPos += BulletBuffer[i]->GetVelocity() / RENDER_TRANSLATION_SCALE;
+							PlayerPos += (BulletBuffer[i]->GetVelocity() / RENDER_TRANSLATION_SCALE) * 2;
 							PlayerBuffer[j]->SetBodyPosition(PlayerPos);
 							// 피격당하는 딜레이 확인 후 체력 감소
 							if (PlayerBuffer[j]->CheckHitDealayComplete())
@@ -595,7 +631,7 @@ void GameProcessFunc::BulletShoot(bool Possesion, Point Pos, Vector Velocity, un
 			newVelocity.j -= BULLET_SPEED;
 			break;
 		}
-		for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+		for (int i = 0; i < MAX_BULLET; ++i)
 		{
 			if (BulletBuffer[i] == NULL)
 			{
@@ -622,7 +658,7 @@ void GameProcessFunc::BulletShoot(bool Possesion, Point Pos, Vector Velocity, un
 			bossShootNum = rand() % 4 + 7;
 			currentShoot = 0;
 			while (currentShoot < bossShootNum) {
-				for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+				for (int i = 0; i < MAX_BULLET; ++i)
 				{
 					if (BulletBuffer[i] == NULL)
 					{
@@ -656,7 +692,7 @@ void GameProcessFunc::BulletShoot(bool Possesion, Point Pos, Vector Velocity, un
 			bossShootNum = 8;
 			currentShoot = 0;
 			while (currentShoot < bossShootNum) {
-				for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+				for (int i = 0; i < MAX_BULLET; ++i)
 				{
 					if (BulletBuffer[i] == NULL)
 					{
@@ -695,47 +731,77 @@ void GameProcessFunc::ResetCommunicationBuffer()
 		- index MAX_CLIENT*2+1 ~ MAX_OBJECT-1까지는 BULLET 오브젝트에 대한 정보
 		- 게임 오브젝트와 통신용 오브젝트는 항상 1:1 로 매칭이 이루어진다.
 	*/
+
+
+	// PlayerBuffer To CommunicationBuffer
+	// And PressurePlateBuffer To CommunicationBuffer
 	for (int i = 0; i < MAX_CLIENT; ++i)
 	{
 		if (PlayerBuffer[i] != NULL)
 		{
-			CommunicationBuffer[i * 2].Obj_Type = KIND_PLAYER_BODY;
-			CommunicationBuffer[i * 2].Obj_Pos = PlayerBuffer[i]->GetBodyPosition();
-			CommunicationBuffer[i * 2].Obj_Pos_InTexture = PlayerBuffer[i]->GetSeqBody();
-			CommunicationBuffer[i * 2].Obj_Velocity = PlayerBuffer[i]->GetVelocity();
-			CommunicationBuffer[i * 2 + 1].Obj_Type = KIND_PLAYER_HEAD;
-			CommunicationBuffer[i * 2 + 1].Obj_Pos = PlayerBuffer[i]->GetHeadPosition();
-			CommunicationBuffer[i * 2 + 1].Obj_Pos_InTexture = PlayerBuffer[i]->GetSeqHead();
-			CommunicationBuffer[i * 2 + 1].Obj_Velocity = PlayerBuffer[i]->GetVelocity();
+			CommunicationBuffer[MAX_CLIENT + i * 2].Obj_Type = KIND_PLAYER_BODY;
+			CommunicationBuffer[MAX_CLIENT + i * 2].Obj_Pos = PlayerBuffer[i]->GetBodyPosition();
+			CommunicationBuffer[MAX_CLIENT + i * 2].Obj_Pos_InTexture = PlayerBuffer[i]->GetSeqBody();
+			CommunicationBuffer[MAX_CLIENT + i * 2].Obj_Velocity = PlayerBuffer[i]->GetVelocity();
+			CommunicationBuffer[MAX_CLIENT + i * 2 + 1].Obj_Type = KIND_PLAYER_HEAD;
+			CommunicationBuffer[MAX_CLIENT + i * 2 + 1].Obj_Pos = PlayerBuffer[i]->GetHeadPosition();
+			CommunicationBuffer[MAX_CLIENT + i * 2 + 1].Obj_Pos_InTexture = PlayerBuffer[i]->GetSeqHead();
+			CommunicationBuffer[MAX_CLIENT + i * 2 + 1].Obj_Velocity = PlayerBuffer[i]->GetVelocity();
 		}
 		else
 		{
-			CommunicationBuffer[i * 2].Obj_Type = KIND_NULL;
-			CommunicationBuffer[i * 2 + 1].Obj_Type = KIND_NULL;
+			CommunicationBuffer[MAX_CLIENT + i * 2].Obj_Type = KIND_NULL;
+			CommunicationBuffer[MAX_CLIENT + i * 2 + 1].Obj_Type = KIND_NULL;
 		}
+
+		if (PressurePlateBuffer[i] != NULL)
+		{
+			CommunicationBuffer[i].Obj_Type = KIND_PRESSURE_PLATE;
+			CommunicationBuffer[i].Obj_Pos = PressurePlateBuffer[i]->GetPosition();
+			CommunicationBuffer[i].Obj_Pos_InTexture = PressurePlateBuffer[i]->GetPos_InTexture();
+			CommunicationBuffer[i].Obj_Velocity = { 0.0f, 0.0f, 0.0f };
+		}
+		else
+			CommunicationBuffer[i].Obj_Type = KIND_NULL;
 	}
+
+	// BossObj To CommunicationBuffer
 	if (BossObj != NULL)
 	{
-		CommunicationBuffer[MAX_CLIENT * 2].Obj_Type = KIND_BOSS;
-		CommunicationBuffer[MAX_CLIENT * 2].Obj_Pos = BossObj->GetPosition();
-		CommunicationBuffer[MAX_CLIENT * 2].Obj_Pos_InTexture = BossObj->GetPos_InTexture();
-		CommunicationBuffer[MAX_CLIENT * 2].Obj_Velocity = BossObj->GetVelocity();
+		CommunicationBuffer[BOSS_ID].Obj_Type = KIND_BOSS;
+		CommunicationBuffer[BOSS_ID].Obj_Pos = BossObj->GetPosition();
+		CommunicationBuffer[BOSS_ID].Obj_Pos_InTexture = BossObj->GetPos_InTexture();
+		CommunicationBuffer[BOSS_ID].Obj_Velocity = BossObj->GetVelocity();
 	}
 	else
-		CommunicationBuffer[MAX_CLIENT * 2].Obj_Type = KIND_NULL;
+		CommunicationBuffer[BOSS_ID].Obj_Type = KIND_NULL;
 
-	for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+	// BulletBuffer To CommunicationBuffer
+	for (int i = 0; i < MAX_BULLET; ++i)
 	{
 		if (BulletBuffer[i] != NULL)
 		{
-			CommunicationBuffer[MAX_CLIENT * 2 + 1 + i].Obj_Type = BulletBuffer[i]->GetPossesion() ? KIND_BULLET_1 : KIND_BULLET_2;
-			CommunicationBuffer[MAX_CLIENT * 2 + 1 + i].Obj_Pos = BulletBuffer[i]->GetPosition();
-			CommunicationBuffer[MAX_CLIENT * 2 + 1 + i].Obj_Velocity = BulletBuffer[i]->GetVelocity();
-			CommunicationBuffer[MAX_CLIENT * 2 + 1 + i].Obj_Pos_InTexture = { 1,1 };
+			CommunicationBuffer[MAX_CLIENT * 3 + 1 + i].Obj_Type = BulletBuffer[i]->GetPossesion() ? KIND_BULLET_1 : KIND_BULLET_2;
+			CommunicationBuffer[MAX_CLIENT * 3 + 1 + i].Obj_Pos = BulletBuffer[i]->GetPosition();
+			CommunicationBuffer[MAX_CLIENT * 3 + 1 + i].Obj_Velocity = BulletBuffer[i]->GetVelocity();
+			CommunicationBuffer[MAX_CLIENT * 3 + 1 + i].Obj_Pos_InTexture = { 1,1 };
 		}
 		else
-			CommunicationBuffer[MAX_CLIENT * 2 + 1 + i].Obj_Type = KIND_NULL;
+			CommunicationBuffer[MAX_CLIENT * 3 + 1 + i].Obj_Type = KIND_NULL;
 	}
+}
+
+bool GameProcessFunc::CheckBossRaidStart()
+{
+	for (int i = 0; i < MAX_CLIENT; ++i)
+	{
+		if (PressurePlateBuffer[i] != NULL)
+		{
+			if (PressurePlateBuffer[i]->CheckPressed() != true)
+				return false;
+		}
+	}
+	return true;
 }
 
 void GameProcessFunc::BossPattern(float ElapsedTime)

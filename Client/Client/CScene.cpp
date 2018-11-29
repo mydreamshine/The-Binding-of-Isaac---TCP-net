@@ -34,6 +34,7 @@ bool CPlayScene::InitialRenderer(int windowSizeX, int windowSizeY, float Transla
 	m_TextureIDs[KIND_BULLET_2] = m_pRenderer->CreatePngTexture("./Resource/Graphic/Blood_Tear.png");
 	m_TextureIDs[KIND_BACKGROND] = m_pRenderer->CreatePngTexture("./Resource/Graphic/Background.png");
 	m_TextureIDs[KIND_BOSS] = m_pRenderer->CreatePngTexture("./Resource/Graphic/Boss.png");
+	m_TextureIDs[KIND_PRESSURE_PLATE] = m_pRenderer->CreatePngTexture("./Resource/Graphic/PressurePlate.png");
 
 	return m_pRenderer->IsInitialized();
 }
@@ -74,7 +75,7 @@ void CPlayScene::UpdateScene(float elapsedTime, float* com_elapsedTime)
 	communication_eTime += elapsedTime;
 
 	//일정 시간 마다 서버와의 통신을 함
-	if (1.f / COMUNICATIONFRAME < (communication_eTime + 1.f / DRAWFRAME)) {
+	if (1.f / CPS < (communication_eTime + 1.f / FPS)) {
 		//서버와의 통신 설정  //서버에서 그릴 것들을 가져옴
 		SetEvent(hCallCommunicationEvent);
 
@@ -173,11 +174,18 @@ void CPlayScene::RendrScene()
 				Animation_Sequence_Y = MAX_PLAYER_BODY_ANIMATION_SEQUENCE_Y;
 				break;
 			case KIND_BOSS:
-				Size.Width = BOSS_WIDTH;
-				Size.Height = BOSS_HEIGHT;
+				Size.Width = BOSS_WIDTH / 2;
+				Size.Height = BOSS_HEIGHT / 2;
 				TextureID = m_TextureIDs[KIND_BOSS];
 				Animation_Sequence_X = MAX_BOSS_ANIMATION_SEQUENCE_X;
 				Animation_Sequence_Y = MAX_BOSS_ANIMATION_SEQUENCE_Y;
+				break;
+			case KIND_PRESSURE_PLATE:
+				Size.Width = PRESSURE_PLATE_WIDTH;
+				Size.Height = PRESSURE_PLATE_HEIGHT;
+				TextureID = m_TextureIDs[KIND_PRESSURE_PLATE];
+				Animation_Sequence_X = MAX_PRESSURE_PLATE_ANIMATION_SEQUENCE_X;
+				Animation_Sequence_Y = MAX_PRESSURE_PLATE_ANIMATION_SEQUENCE_Y;
 				break;
 			case KIND_BULLET_1:
 				Size.Width = BULLET_WIDTH;

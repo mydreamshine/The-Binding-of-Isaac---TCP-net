@@ -29,7 +29,7 @@ void RenderScene(void)
 	eTime = (float)(cur_Time - g_PrevRenderTime) / 1000.0f;
 
 	//일정 프레임이 나오도록 변경
-	if (eTime > 1.f / DRAWFRAME) {
+	if (eTime > 1.f / FPS) {
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glClearColor(0.0f, 0.3f, 0.3f, 1.0f);

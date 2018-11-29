@@ -8,6 +8,7 @@ struct CommunicationData;
 class Player;
 class Boss;
 class Bullet;
+class PressurePlate;
 
 
 
@@ -166,4 +167,22 @@ public:
 	u_short GetReflectCnt()							{ return m_ReflectCnt; }
 
 	void Update(float ElapsedTime);
+};
+
+
+class PressurePlate
+{
+private:
+	Point  m_Position;
+	POINT  m_Pos_InTexture = { 0,0 };
+public:
+	PressurePlate() = default;
+	~PressurePlate() = default;
+
+	void  SetPosition(Point newPoint)      { m_Position = newPoint; }
+	void  SetPos_InTexture(POINT newPoint) { m_Pos_InTexture = newPoint; }
+	POINT GetPos_InTexture()               { return m_Pos_InTexture; }
+	Point GetPosition()                    { return m_Position; }
+
+	bool CheckPressed() { return (m_Pos_InTexture.x == MAX_PRESSURE_PLATE_ANIMATION_SEQUENCE_X - 1); }
 };

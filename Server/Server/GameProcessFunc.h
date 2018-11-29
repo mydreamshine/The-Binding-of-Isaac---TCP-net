@@ -27,6 +27,7 @@ namespace GameProcessFunc
 	bool SendCommunicationData(SOCKET sock, int ClientID);
 	void ResetCommunicationBuffer();
 
+	bool CheckBossRaidStart();
 	void BossPattern(float ElapsedTime);
 	void BossJump(float ElapsedTime);
 	void BossHighJump(float ElapsedTime);

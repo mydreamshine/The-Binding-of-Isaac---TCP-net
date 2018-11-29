@@ -57,7 +57,6 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 	}
 	else
 	{
-		GameStart = true;
 		// 접속 클라이언트 수 증가
 		++CurClientNum;
 		// 게임 오브젝트의 정보를 통신 오브젝트에 반영
@@ -150,10 +149,10 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 		}
 		else
 		{
-			if (GameStart)
+			if (GameProcessFunc::CheckBossRaidStart() && GameStart == false)
 			{
 				GameProcessFunc::CreateNewBoss();
-				GameStart = false;
+				GameStart = true;
 			}
 
 			// 현재 서버에 접속한 클라이언트에 해당되는 hRecvAllEvent를 (hRecvAllEvent[ClientID])

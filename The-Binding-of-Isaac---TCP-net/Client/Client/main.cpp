@@ -15,42 +15,41 @@ CScene* g_pScene = nullptr;
 
 void RenderScene(void)
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
-	g_pScene->RendrScene();
-
-	glutSwapBuffers();
-
-	static char m_pszFrameRate[50] = "The Binding of Isaac - Client (";
+	static char FrameAndCommunicationRate[70] = "The Binding of Isaac - Client (";
 
 	static DWORD g_PrevRenderTime = 0;
 	static DWORD cur_Time = 0;
-	static float eTime = 0.0f;
+	static float eTime = 0.0f, Communcation_eTime = 0.0f;
+	static size_t WndTitlelen;
 
 	if (g_PrevRenderTime == 0)
 		g_PrevRenderTime = timeGetTime();
 	cur_Time = timeGetTime();
 	eTime = (float)(cur_Time - g_PrevRenderTime) / 1000.0f;
-	g_PrevRenderTime = cur_Time;
-	_itoa_s((int)(1.0f/ eTime), m_pszFrameRate + 31, 19, 10);
-	strcat_s(m_pszFrameRate + 31, 19, " FPS)");
-	glutSetWindowTitle(m_pszFrameRate);
 
-	// frame : 마지막으로 FPS 를 계산한 후부터 현재까지의 프레임수
-	// time - 현재의 밀리초
-	// timebase - 마지막으로 FPS 를 계산했을 때의 밀리초
-	//static int frame, time, timebase;
-	/*frame++;
-	time = glutGet(GLUT_ELAPSED_TIME);
-	if (time - timebase > 1000)
-	{
-		_itoa_s((int)(frame*1000.0f / (time - timebase)), m_pszFrameRate + 31, 19, 10);
-		strcat_s(m_pszFrameRate + 31, 19, " FPS)");
-		glutSetWindowTitle(m_pszFrameRate);
-		timebase = time;
-		frame = 0;
-	}*/
+	//일정 프레임이 나오도록 변경
+	if (eTime > 1.f / FPS) {
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
+
+		g_PrevRenderTime = cur_Time;
+		_itoa_s((int)(1.0f / eTime), FrameAndCommunicationRate + 31, 39, 10);
+		strcat_s(FrameAndCommunicationRate + 31, 39, " FPS, ");
+
+		g_pScene->UpdateScene(eTime, &Communcation_eTime);
+
+		WndTitlelen = strlen(FrameAndCommunicationRate);
+		_itoa_s((int)(1.0f / Communcation_eTime), FrameAndCommunicationRate + WndTitlelen, 70 - WndTitlelen, 10);
+		strcat_s(FrameAndCommunicationRate + WndTitlelen, 70 - WndTitlelen, " CPS)");
+
+		glutSetWindowTitle(FrameAndCommunicationRate);
+
+		g_pScene->RendrScene();
+
+		glutSwapBuffers();
+	}
 }
 
 void Idle(void)
@@ -75,7 +74,6 @@ void KeyUp(unsigned char key, int x, int y)
 
 void SpecialKeyPressed(int key, int x, int y)
 {
-
 	g_pScene->SpecialKeyPressed(key, x, y);
 }
 
@@ -84,8 +82,6 @@ void SpecialKeyUp(int key, int x, int y)
 	g_pScene->SpecialKeyUp(key, x, y);
 }
 
-#define SERVER_ADDR "127.0.0.1"
-#define SERVER_PORT 9000
 DWORD WINAPI CommunicationWithServer(LPVOID arg)
 {
 	if(g_pScene) g_pScene->CommunicationWithServer(arg);
@@ -141,53 +137,9 @@ int main(int argc, char **argv)
 	glutMouseFunc(MouseInput);													     //
 	///////////////////////////////////////////////////////////////////////////////////
 
-
-	
-
-	//////////////////////////////////////// Initialize Winsock  ////////////////////////////////////////
-	int retval;																						   //
-	WSADATA wsa;																					   //
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)														   //
-	{																								   //
-		delete g_pScene;																			   //
-		return 1;																					   //
-	}																								   //
-																									   //
-	// Create Socket																				   //
-	SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);													   //
-	if (sock == INVALID_SOCKET)																		   //
-	{																								   //
-		delete g_pScene;																			   //
-		err_quit((char*)"socket()");																   //
-	}																								   //
-																									   //
-	// Setting Socket(Protocol, IPv4, PortNum) <- Server Information								   //
-	SOCKADDR_IN serveraddr;																			   //
-	ZeroMemory(&serveraddr, sizeof(serveraddr));													   //
-																									   //
-	serveraddr.sin_family = AF_INET;																   //
-	serveraddr.sin_addr.s_addr = inet_addr(SERVER_ADDR);											   //
-	serveraddr.sin_port = htons(SERVER_PORT);														   //
-																									   //
-	retval = connect(sock, (SOCKADDR*)&serveraddr, sizeof(serveraddr));								   //
-	if (retval == SOCKET_ERROR)																		   //
-	{																								   //
-		delete g_pScene;																			   //
-		err_quit((char*)"connect()");																   //
-	}																								   //
-																									   //
-	// Communication With Server																	   //
-	HANDLE hThread = CreateThread(NULL, 0, CommunicationWithServer, (LPVOID)sock, 0, NULL);		       //
-	if (hThread == NULL)																			   //
-	{																								   //
-		closesocket(sock);																			   //
-		std::cout																					   //
-			<< "[TCP 클라이언트] 서버 종료: IP 주소=" << inet_ntoa(serveraddr.sin_addr)				   //
-			<< ", 포트번호=" << ntohs(serveraddr.sin_port)											   //
-			<< std::endl;																			   //
-	}																								   //
-	else CloseHandle(hThread);																		   //
-	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Create Thread(CommunicationWithServer)
+	HANDLE hThread = CreateThread(NULL, 0, CommunicationWithServer, NULL, 0, NULL);
+	if (hThread != NULL) CloseHandle(hThread);
 
 	glutMainLoop();
 

@@ -61,7 +61,8 @@ public:
 	bool isPerpendicularTo(Vector v) { return equal(this->dot(v), 0); }//벡터 v와의 직교성(내적이 0) 판단
 	bool isParallelTo(Vector v) { return equal(cosine(*this, v), 1.0); }//벡터 v와의 직교성(cos(Θ)가 1) 판단
 	Vector projectionOnto(Vector v) { return this->dot(unit(v)) * unit(v); }//벡터 v에 투영
-	Vector reflectionAbout(Vector v) { return *this + 2 * this->dot(-unit(v)) * unit(v); }//벡터 v를 기준으로 반사되는 벡터
+	Vector reflectionAbout(Vector v) { return *this - 2 * projectionOnto(v); }//벡터 v를 기준으로 반사되는 벡터
+	Vector slidingAbout(Vector v) { return *this - projectionOnto(v); }//벡터 v를 기준으로 미끄러지는 벡터
 };
 
 //길이가 1인 단위벡터
@@ -79,10 +80,9 @@ class Point
 {
 public:
 	float x, y, z;
-
-	~Point() {}
 	Point(float x = 0.0f, float y = 0.0f, float z = 0.0f) : x(x), y(y), z(z) {}
 	Point(Vector v) : x(v.i), y(v.j), z(v.k) {}
+	~Point() {}
 
 	Point operator +(Vector v) { return Point(x + v.i, y + v.j, z + v.k); }
 	Point& operator +=(Vector v) { x += v.i; y += v.j; z += v.k; return *this; }

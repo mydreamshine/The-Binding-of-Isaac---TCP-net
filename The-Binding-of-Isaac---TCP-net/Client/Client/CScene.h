@@ -12,9 +12,10 @@
 // 통신에 쓰일 구조체
 struct CommunicationData
 {
-	int   Obj_Type = KIND_NULL;
-	Point Obj_Pos;  // float x, y, z
-	POINT Obj_Pos_InTexture = { 0,0 }; // LONG x, y
+	int    Obj_Type = KIND_NULL;
+	Point  Obj_Pos;  // float x, y, z
+	POINT  Obj_Pos_InTexture = { 0,0 }; // LONG x, y
+	Vector Obj_Velocity;
 };
 
 
@@ -61,7 +62,7 @@ public:
 	virtual void KeyOperation(float elapsedTime) {}
 	virtual void SpecialKeyOperation(float elapsedTime) {}
 
-	virtual void UpdateScene(float elapsedTime) {}
+	virtual void UpdateScene(float elapsedTime, float* com_elapsedTime) {}
 	virtual void RendrScene() {}
 
 	virtual void CommunicationWithServer(LPVOID arg) {}
@@ -105,6 +106,7 @@ public:
 	virtual void SpecialKeyPressed(int key, int x, int y);
 	virtual void SpecialKeyUp(int key, int x, int y);
 
+	virtual void UpdateScene(float elapsedTime, float* com_elapsedTime);
 	virtual void RendrScene();
 
 	virtual void CommunicationWithServer(LPVOID arg);

@@ -14,10 +14,10 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="리소스 파일\Graphic">
-      <UniqueIdentifier>{25fcf838-99ce-4bbb-a5a5-d0350d54c815}</UniqueIdentifier>
+      <UniqueIdentifier>{601d3d49-6fe7-407e-9a27-e2bf618b5766}</UniqueIdentifier>
     </Filter>
-    <Filter Include="리소스 파일\Shaders">
-      <UniqueIdentifier>{99fe5c6d-c972-4bc6-878d-c763da0cb4b0}</UniqueIdentifier>
+    <Filter Include="리소스 파일\Shader">
+      <UniqueIdentifier>{6535fbf8-51aa-46a4-b9e8-63b15d92499c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -27,10 +27,10 @@
     <ClCompile Include="LoadPng.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="Renderer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
@@ -61,30 +61,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resource\Shaders\SolidRect.fs">
-      <Filter>리소스 파일\Shaders</Filter>
-    </None>
-    <None Include="Resource\Shaders\SolidRect.vs">
-      <Filter>리소스 파일\Shaders</Filter>
-    </None>
-    <None Include="Resource\Shaders\TextureRect.fs">
-      <Filter>리소스 파일\Shaders</Filter>
-    </None>
-    <None Include="Resource\Shaders\TextureRect.vs">
-      <Filter>리소스 파일\Shaders</Filter>
-    </None>
-    <None Include="Resource\Shaders\TextureRectSeq.fs">
-      <Filter>리소스 파일\Shaders</Filter>
-    </None>
-    <None Include="Resource\Shaders\TextureRectSeq.vs">
-      <Filter>리소스 파일\Shaders</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="Resource\Graphic\Background.png">
       <Filter>리소스 파일\Graphic</Filter>
     </Image>
     <Image Include="Resource\Graphic\Blood_Tear.png">
+      <Filter>리소스 파일\Graphic</Filter>
+    </Image>
+    <Image Include="Resource\Graphic\Boss.png">
       <Filter>리소스 파일\Graphic</Filter>
     </Image>
     <Image Include="Resource\Graphic\Isaac_Body.png">
@@ -99,5 +82,25 @@
     <Image Include="Resource\Graphic\Tear.png">
       <Filter>리소스 파일\Graphic</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\Shaders\SolidRect.fs">
+      <Filter>리소스 파일\Shader</Filter>
+    </None>
+    <None Include="Resource\Shaders\SolidRect.vs">
+      <Filter>리소스 파일\Shader</Filter>
+    </None>
+    <None Include="Resource\Shaders\TextureRect.fs">
+      <Filter>리소스 파일\Shader</Filter>
+    </None>
+    <None Include="Resource\Shaders\TextureRect.vs">
+      <Filter>리소스 파일\Shader</Filter>
+    </None>
+    <None Include="Resource\Shaders\TextureRectSeq.fs">
+      <Filter>리소스 파일\Shader</Filter>
+    </None>
+    <None Include="Resource\Shaders\TextureRectSeq.vs">
+      <Filter>리소스 파일\Shader</Filter>
+    </None>
   </ItemGroup>
 </Project>

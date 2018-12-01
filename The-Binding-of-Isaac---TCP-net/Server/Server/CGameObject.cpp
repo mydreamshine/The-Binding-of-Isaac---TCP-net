@@ -1,13 +1,28 @@
 #include "CGameObject.h"
-
+#include <time.h>
 
 Player::Player()
 {
 	m_HP = 0;
-	m_Pos_InHeadTexture = { 0,0 };
-	m_Pos_InBodyTexture = { 0,0 };
+	m_SeqBody = { 0,0 };
+	m_SeqHead = { 0,0 };
+
 	ZeroMemory(m_KeyState, 256);
 	ZeroMemory(m_SpecialKeyState, 246);
+
+	m_HitDealay = 0;
+	m_StartHitDealay = timeGetTime();
+}
+
+void Player::InitHitDealay()
+{
+	m_StartHitDealay = timeGetTime();
+}
+
+bool Player::CheckHitDealayComplete()
+{
+	if (timeGetTime() - m_StartHitDealay >= m_HitDealay) return true;
+	return false;
 }
 
 void Player::Update(float ElapsedTime)
@@ -42,8 +57,9 @@ void Player::Update(float ElapsedTime)
 
 	// Calculation Position
 	// 새로운 위치 = 이전 위치 + 속도 * 시간
+	//m_HeadPosition += m_Velocity * ElapsedTime;
 	m_BodyPosition += m_Velocity * ElapsedTime;
-	Point amount = { 0.041f, 0.209f, 0 };
+	Point amount = { PLAYER_HEAD_OFFSET_X, PLAYER_HEAD_OFFSET_Y, 0 };
 	m_HeadPosition = m_BodyPosition + amount;
 	// Animation Frame Update
 	// ...
@@ -129,6 +145,7 @@ Bullet::Bullet()
 	m_Mass = 0.0f;
 	m_FrictionFactor = 0.0f;
 	m_Damage = 0;
+	m_ReflectCnt = 0;
 }
 
 void Bullet::Update(float ElapsedTime)

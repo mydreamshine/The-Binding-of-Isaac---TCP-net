@@ -1,2 +1,7 @@
 ﻿  CScene.cpp
-  Client.vcxproj -> D:\download\The-Binding-of-Isaac---TCP-net-master\The-Binding-of-Isaac---TCP-net-master\Client\Debug\Client.exe
+  LoadPng.cpp
+  main.cpp
+  Renderer.cpp
+  stdafx.cpp
+  코드를 생성하고 있습니다...
+  Client.vcxproj -> D:\넷겜플\The-Binding-of-Isaac---TCP-net-master\The-Binding-of-Isaac---TCP-net\Client\Debug\Client.exe

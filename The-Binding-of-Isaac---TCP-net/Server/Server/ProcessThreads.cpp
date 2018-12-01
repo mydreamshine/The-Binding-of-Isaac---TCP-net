@@ -1,4 +1,6 @@
 #include "ProcessThreads.h"
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 
 HANDLE hRecvAllEvent[MAX_CLIENT];
 HANDLE hUpdateEvent[MAX_CLIENT];
@@ -55,7 +57,6 @@ DWORD WINAPI ProcessClient(LPVOID arg)
 	}
 	else
 	{
-		GameStart = true;
 		// 접속 클라이언트 수 증가
 		++CurClientNum;
 		// 게임 오브젝트의 정보를 통신 오브젝트에 반영
@@ -140,6 +141,7 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 			if (GameStart)
 			{
 				GameProcessFunc::InitGameObject();
+				//GameProcessFunc::CreateNewBoss();
 				GameStart = false;
 			}
 			for (int i = 0; i < MAX_CLIENT; ++i)
@@ -147,6 +149,12 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 		}
 		else
 		{
+			if (GameProcessFunc::CheckBossRaidStart() && GameStart == false)
+			{
+				GameProcessFunc::CreateNewBoss();
+				GameStart = true;
+			}
+
 			// 현재 서버에 접속한 클라이언트에 해당되는 hRecvAllEvent를 (hRecvAllEvent[ClientID])
 			// 제외한 나머지 hRecvAllEvent에 대해서 신호상태로 바꿔준다.
 			// (hUpdateEvent를 수행하기 위함.)
@@ -154,21 +162,31 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 			int PlayerNum = GameProcessFunc::FindNullPlayerIndex(PlayerNullindexs);
 			for (int i = 0; i < PlayerNum; ++i)
 				SetEvent(hRecvAllEvent[PlayerNullindexs[i]]);
+
+			// 모든 클라이언트로부터 Recv()가 확인 될 때까지 대기
+			WaitForMultipleObjects(MAX_CLIENT, hRecvAllEvent, TRUE, INFINITE);
+
+			// ElapsedTime 계산
+			static DWORD g_PrevRenderTime = 0;
+			static DWORD cur_Time = 0;
+			static float eTime = 0.0f;
+
+			if (g_PrevRenderTime == 0)
+				g_PrevRenderTime = timeGetTime();
+			cur_Time = timeGetTime();
+
+			eTime = (float)(cur_Time - g_PrevRenderTime) / 1000.0f;
+			g_PrevRenderTime = cur_Time;
+
+			// 게임 오브젝트 Update
+			GameProcessFunc::ProcessInput(eTime);
+			GameProcessFunc::ProcessPhisics(eTime);
+			GameProcessFunc::BossPattern(eTime);
+			GameProcessFunc::ProcessCollision(eTime);
+
+			// 게임 오브젝트의 정보를 통신 오브젝트에 반영
+			GameProcessFunc::ResetCommunicationBuffer();
 		}
-		// 모든 클라이언트로부터 Recv()가 확인 될 때까지 대기
-		WaitForMultipleObjects(MAX_CLIENT, hRecvAllEvent, TRUE, INFINITE);
-
-		// ElapsedTime 계산(계산 수정요)
-		float ElapsedTime = 1.0f / 60;
-
-		// 게임 오브젝트 Update
-		GameProcessFunc::ProcessInput(ElapsedTime);
-		GameProcessFunc::ProcessPhisics(ElapsedTime);
-		GameProcessFunc::ProcessCollision(ElapsedTime);
-
-		// 게임 오브젝트의 정보를 통신 오브젝트에 반영
-		GameProcessFunc::ResetCommunicationBuffer();
-
 		// 모든 오브젝트의 업데이트가 끝남을 알림
 		// hUpdateEvent를 클라이언트 개수만큼 신호상태로 한 이유:
 		// hUpdateEvent를 각 ProcessClient마다 비신호 상태로 바꿀려고 하면

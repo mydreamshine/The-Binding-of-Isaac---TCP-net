@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{40803133-E643-4B64-B883-042FC869E2EF}</ProjectGuid>
+    <ProjectGuid>{45AF51C1-2131-4809-BE7B-D975BE00CDF1}</ProjectGuid>
     <RootNamespace>Server</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -115,19 +115,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CGameObject.cpp" />
+    <ClCompile Include="CollisionFunc.cpp" />
+    <ClCompile Include="GameProcessFunc.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="ProcessThreads.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="CGameObject.h" />
     <ClInclude Include="GameProcessFunc.h" />
     <ClInclude Include="Geometric.h" />
     <ClInclude Include="Global.h" />
     <ClInclude Include="ProcessThreads.h" />
     <ClInclude Include="stdafx.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="CGameObject.cpp" />
-    <ClCompile Include="GameProcessFunc.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="ProcessThreads.cpp" />
-    <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

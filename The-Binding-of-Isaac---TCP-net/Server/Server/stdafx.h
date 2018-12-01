@@ -1,6 +1,7 @@
 #pragma once
 #include <stdio.h>
 #include <iostream>
+#include <list>
 #include <tchar.h>
 #include "Geometric.h"
 #include "Global.h"

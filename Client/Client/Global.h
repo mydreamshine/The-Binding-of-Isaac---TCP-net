@@ -20,13 +20,14 @@
 
 
 // Game Elements
-#define MAX_OBJECT 500
+#define MAX_OBJECT 200
 #define PLAYER_INIT_HP 6
-#define BOSS_INIT_HP 1000
+#define BOSS_INIT_HP 100
 #define PLAYER_BULLET_DAMAGE 1
 #define BOSS_BULLET_DAMAGE 1
 #define MAX_BULLET_REFLECT_COUNT 2
 #define PLAYER_HIT_DEALAY 2000 // millisecond
+#define PLAYER_BULLET_SHOOT_DEALAY 200 // millisecond
 
 
 
@@ -47,7 +48,7 @@
 
 
 // Object Kind
-#define MAX_OBJECT_KIND     7
+#define MAX_OBJECT_KIND     9
 #define KIND_NULL          -1
 #define KIND_PLAYER_HEAD    1 // Down/Right/Up/Left Sequence Each Two-Frame (In Sprite of One-Row)
 #define KIND_PLAYER_BODY    0 // Up-Down//Left-Right Sequence Each Ten-Frame (In Sprite of Three-Row)
@@ -56,6 +57,8 @@
 #define KIND_BULLET_2       4 // Blood Tear
 #define KIND_BACKGROND      5
 #define KIND_PRESSURE_PLATE 6
+#define KIND_PLAYER_HEART	7
+#define KIND_BOSS_NAME      8
 
 
 // Render Option
@@ -68,14 +71,24 @@
 #define MAX_BOSS_ANIMATION_SEQUENCE_Y 2
 #define MAX_PRESSURE_PLATE_ANIMATION_SEQUENCE_X 2
 #define MAX_PRESSURE_PLATE_ANIMATION_SEQUENCE_Y 1
-#define PLAYER_WIDTH  1.0f
-#define PLAYER_HEIGHT 1.0f
-#define BULLET_WIDTH  0.3f
-#define BULLET_HEIGHT 0.3f
+#define MAX_PLAYER_HEART_ANIMATION_SEQUENCE_X 4
+#define MAX_PLAYER_HEART_ANIMATION_SEQUENCE_Y 4
+#define PLAYER_WIDTH  1.5f
+#define PLAYER_HEIGHT 1.5f
+#define BULLET_WIDTH  0.2f
+#define BULLET_HEIGHT 0.2f
 #define BOSS_WIDTH    2.0f
 #define BOSS_HEIGHT   2.0f
 #define PRESSURE_PLATE_WIDTH  1.0f
 #define PRESSURE_PLATE_HEIGHT 1.0f
+#define UI_PLAYER_HEART_WIDTH  0.5f	
+#define UI_PLAYER_HEART_HEIGHT 0.5f
+#define UI_PLAYER_HEART_POS_X  -(WND_WIDTH / 2.0f) + 80.f
+#define UI_PLAYER_HEART_POS_Y  WND_HEIGHT / 2.0f - 90.f
+#define UI_BOSS_HP_RECT_POS_X  0.0f
+#define UI_BOSS_HP_RECT_POS_Y  WND_HEIGHT / 2.0f - 70.0f
+#define UI_BOSS_HP_RECT_WIDTH  WND_WIDTH / 2.0f
+#define UI_BOSS_HP_RECT_HEIGHT WND_HEIGHT / 20.0f
 
 
 // Phisical Option
@@ -84,13 +97,15 @@
 #define BACKGROUND_DOWN_MARGINE     110.0f
 #define BACKGROUND_LEFT_MARGINE     110.0f
 #define BACKGROUND_RIGHT_MARGINE    110.0f
-#define PLAYER_SPEED                1.0f
+#define PLAYER_SPEED                0.5f
 #define PLAYER_MASS                 0.1f
 #define PLAYER_FRICTION_FACTOR      0.5f
 #define PLAYER_BOUNDINGBOX_WIDTH    PLAYER_WIDTH * 0.5f
-#define PLAYER_BOUNDINGBOX_HEIGHT   PLAYER_HEIGHT * 0.5f
-#define PLAYER_HEAD_OFFSET_X        0.041f
-#define PLAYER_HEAD_OFFSET_Y        0.209f
+#define PLAYER_BOUNDINGBOX_HEIGHT   PLAYER_HEIGHT * 0.3f
+#define PLAYER_HEAD_OFFSET_X        0.071f
+#define PLAYER_HEAD_OFFSET_Y        0.341f
+#define PLAYER_FOOTSTEP_DISTANCE    68.0f / RENDER_TRANSLATION_SCALE // 실제 Pixel(17.0f)의 4배(값이 클 수록 Sequence 전환이 느려짐)
+#define PLAYER_FOOTSTEP_DIST_ONE_SEQUENCE (PLAYER_FOOTSTEP_DISTANCE) / MAX_PLAYER_BODY_ANIMATION_SEQUENCE_X
 #define BOSS_SPEED                  1.0f
 #define BOSS_MASS                   0.1f
 #define BOSS_FRICTION_FACTOR        0.5f

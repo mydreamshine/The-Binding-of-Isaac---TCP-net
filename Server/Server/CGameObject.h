@@ -27,6 +27,16 @@ struct CommunicationData
 	Vector Obj_Velocity;
 };
 
+struct CommunicationData2
+{
+	int  Player_Index[MAX_CLIENT];
+	int  Player_HP;
+	int  Boss_HP;
+	bool GameFail;
+	bool GameClear;
+	bool bPlayerHited[MAX_CLIENT];
+};
+
 
 
 
@@ -49,6 +59,9 @@ private:
 
 	unsigned long m_HitDealay; //millisecond
 	unsigned long m_StartHitDealay;
+
+	unsigned long m_BulletShootDealay; //millisecond
+	unsigned long m_StartBulletShootDealay;
 public:
 	Player();
 	~Player() = default;
@@ -75,6 +88,10 @@ public:
 	void SetHitDealay(unsigned long newHitDealay)       { m_HitDealay = newHitDealay; }
 	void InitHitDealay();
 	bool CheckHitDealayComplete();
+
+	void SetBulletShootDealay(unsigned long newHitDealay) { m_BulletShootDealay = newHitDealay; }
+	void InitBulletShootDealay();
+	bool CheckBulletShootDealayComplete();
 
 	void Update(float ElapsedTime);
 	void ApplyForce(Vector Force, float ElapsedTime);

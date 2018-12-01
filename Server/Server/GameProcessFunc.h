@@ -16,6 +16,7 @@ namespace GameProcessFunc
 
 	bool CreateNewBoss();
 	int CreateNewPlayer();
+	void ComPlayerBodyIndex(int indexArray[]);
 	int FindNullPlayerIndex(int indexArray[]);
 	void BulletShoot(bool Possesion, Point Pos, Vector Velocity, unsigned int shootID);
 
@@ -34,5 +35,8 @@ namespace GameProcessFunc
 	void BossShoot(float ElapsedTime);
 	Vector BossGetDirectirion();
 	Point BossGetPoint();
+
+	bool CheckGameClear();
+	bool CheckGameFail(int ClientID);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////

@@ -17,6 +17,15 @@ struct CommunicationData
 	POINT  Obj_Pos_InTexture = { 0,0 }; // LONG x, y
 	Vector Obj_Velocity;
 };
+struct CommunicationData2
+{
+	int  Player_Index[MAX_CLIENT] = { -1, };
+	int  Player_HP = 0;
+	int  Boss_HP = 0;
+	bool GameFail = false;
+	bool GameClear = false;
+	bool bPlayerHited[MAX_CLIENT] = { false, };
+};
 
 
 
@@ -91,6 +100,7 @@ private:
 	float              m_TranslationScale = 1.0f;
 	Renderer*          m_pRenderer = nullptr;
 	CommunicationData  m_RenderObjects[MAX_OBJECT];
+	CommunicationData2 m_GameInfo;
 	u_int              m_CurrentObjectNum;
 	u_int              m_TextureIDs[MAX_OBJECT_KIND];
 
@@ -108,6 +118,7 @@ public:
 
 	virtual void UpdateScene(float elapsedTime, float* com_elapsedTime);
 	virtual void RendrScene();
+	void         RenderUI();
 
 	virtual void CommunicationWithServer(LPVOID arg);
 };

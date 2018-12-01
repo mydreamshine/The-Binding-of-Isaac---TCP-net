@@ -6,7 +6,6 @@ HANDLE hRecvAllEvent[MAX_CLIENT];
 HANDLE hUpdateEvent[MAX_CLIENT];
 HANDLE hNewClient;
 
-
 unsigned int CurClientNum = 0;
 bool GameStart = false;
 
@@ -138,7 +137,7 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 		{
 			// 접속한 클라이언트가 없어도(현재 클라이언트 수: 0) Update는 돌아가야 한다.
 			// 단, Update되어야 할 오브젝트는 존재하지 않게 한다.
-			if (GameStart)
+			if (GameStart == true)
 			{
 				GameProcessFunc::InitGameObject();
 				//GameProcessFunc::CreateNewBoss();
@@ -179,9 +178,11 @@ DWORD WINAPI ProcessGameUpdate(LPVOID arg)
 			g_PrevRenderTime = cur_Time;
 
 			// 게임 오브젝트 Update
-			GameProcessFunc::ProcessInput(eTime);
+			if(GameProcessFunc::CheckGameClear() == false)
+				GameProcessFunc::ProcessInput(eTime);
 			GameProcessFunc::ProcessPhisics(eTime);
-			GameProcessFunc::BossPattern(eTime);
+			if (GameProcessFunc::CheckGameClear() == false)
+				GameProcessFunc::BossPattern(eTime);
 			GameProcessFunc::ProcessCollision(eTime);
 
 			// 게임 오브젝트의 정보를 통신 오브젝트에 반영

@@ -134,8 +134,11 @@
     <Image Include="Resource\Graphic\Background.png" />
     <Image Include="Resource\Graphic\Blood_Tear.png" />
     <Image Include="Resource\Graphic\Boss.png" />
+    <Image Include="Resource\Graphic\Boss_Name.png" />
+    <Image Include="Resource\Graphic\Heart.png" />
     <Image Include="Resource\Graphic\Isaac_Body.png" />
     <Image Include="Resource\Graphic\Isaac_Head.png" />
+    <Image Include="Resource\Graphic\PressurePlate.png" />
     <Image Include="Resource\Graphic\Shadow.png" />
     <Image Include="Resource\Graphic\Tear.png" />
   </ItemGroup>

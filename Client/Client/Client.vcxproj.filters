@@ -82,6 +82,15 @@
     <Image Include="Resource\Graphic\Tear.png">
       <Filter>리소스 파일\Graphic</Filter>
     </Image>
+    <Image Include="Resource\Graphic\Boss_Name.png">
+      <Filter>리소스 파일\Graphic</Filter>
+    </Image>
+    <Image Include="Resource\Graphic\Heart.png">
+      <Filter>리소스 파일\Graphic</Filter>
+    </Image>
+    <Image Include="Resource\Graphic\PressurePlate.png">
+      <Filter>리소스 파일\Graphic</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resource\Shaders\SolidRect.fs">

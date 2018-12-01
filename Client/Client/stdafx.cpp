@@ -1,5 +1,10 @@
 #include "stdafx.h"
 #include <WinSock2.h>
+#pragma comment(lib, "./Dependencies/freeglut")
+#pragma comment(lib, "./Dependencies/glew32")
+#pragma comment(lib, "./Dependencies/glew32s")
+#include "Dependencies\glew.h"
+#include "Dependencies\freeglut.h"
 
 // 윈속 함수 에러 출력
 void err_quit(char* msg)

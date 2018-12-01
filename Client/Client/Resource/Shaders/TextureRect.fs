@@ -8,5 +8,6 @@ uniform sampler2D u_Texture;
 
 void main()
 {
-	FragColor = texture(u_Texture, v_TexPos)*u_Color;
+	vec2 newTexPos = vec2(v_TexPos.x, 1-v_TexPos.y);
+	FragColor = texture(u_Texture, newTexPos)*u_Color;
 }

@@ -30,6 +30,9 @@ void GameProcessFunc::InitGameObject()
 		{
 			delete PlayerBuffer[i];
 			PlayerBuffer[i] = NULL;
+		}
+		if (PressurePlateBuffer[i] != NULL)
+		{
 			delete PressurePlateBuffer[i];
 			PressurePlateBuffer[i] = NULL;
 		}
@@ -99,17 +102,29 @@ int GameProcessFunc::CreateNewPlayer()
 		PlayerBuffer[ClientID]->SetSeqHead(newSeqHead);
 		PlayerBuffer[ClientID]->SetHitDealay(PLAYER_HIT_DEALAY);
 		PlayerBuffer[ClientID]->InitHitDealay();
+		PlayerBuffer[ClientID]->SetBulletShootDealay(PLAYER_BULLET_SHOOT_DEALAY);
+		PlayerBuffer[ClientID]->InitBulletShootDealay();
 
-		Point newPoint;
-		POINT newSeq = { 0, 0 };
-		newPoint.x = (ClientID % 2 == 0) ? -3.2f : 3.2f;
-		newPoint.y = (ClientID < 2) ? 1.5f : -1.5f;
-		PressurePlateBuffer[ClientID] = new PressurePlate();
-		PressurePlateBuffer[ClientID]->SetPosition(newPoint);
-		PressurePlateBuffer[ClientID]->SetPos_InTexture(newSeq);
+		if (!GameProcessFunc::CheckBossRaidStart())
+		{
+			Point newPoint;
+			POINT newSeq = { 0, 0 };
+			newPoint.x = (ClientID % 2 == 0) ? -3.2f : 3.2f;
+			newPoint.y = (ClientID < 2) ? 1.5f : -1.5f;
+			PressurePlateBuffer[ClientID] = new PressurePlate();
+			PressurePlateBuffer[ClientID]->SetPosition(newPoint);
+			PressurePlateBuffer[ClientID]->SetPos_InTexture(newSeq);
+		}
 	}
 
 	return ClientID;
+}
+
+// Player_Body_Index (Player_Head_Index = Player_Body_Index + 1)
+void GameProcessFunc::ComPlayerBodyIndex(int indexArray[])
+{
+	for (int i = 0; i < MAX_CLIENT; ++i)
+		indexArray[i] = MAX_CLIENT + i*2;
 }
 
 int GameProcessFunc::FindNullPlayerIndex(int indexArray[])
@@ -132,8 +147,8 @@ bool GameProcessFunc::RecvInput(SOCKET sock, int ClientID)
 	{
 		delete PlayerBuffer[ClientID];
 		PlayerBuffer[ClientID] = NULL;
-		delete PressurePlateBuffer[ClientID];
-		PressurePlateBuffer[ClientID] = NULL;
+		//delete PressurePlateBuffer[ClientID];
+		//PressurePlateBuffer[ClientID] = NULL;
 		err_display((char*)"recv()");
 		return false;
 	}
@@ -144,8 +159,8 @@ bool GameProcessFunc::RecvInput(SOCKET sock, int ClientID)
 	{
 		delete PlayerBuffer[ClientID];
 		PlayerBuffer[ClientID] = NULL;
-		delete PressurePlateBuffer[ClientID];
-		PressurePlateBuffer[ClientID] = NULL;
+		//delete PressurePlateBuffer[ClientID];
+		//PressurePlateBuffer[ClientID] = NULL;
 		err_display((char*)"recv()");
 		return false;
 	}
@@ -197,8 +212,26 @@ bool GameProcessFunc::SendCommunicationData(SOCKET sock, int ClientID)
 	{
 		delete PlayerBuffer[ClientID];
 		PlayerBuffer[ClientID] = NULL;
-		delete PressurePlateBuffer[ClientID];
-		PressurePlateBuffer[ClientID] = NULL;
+		//delete PressurePlateBuffer[ClientID];
+		//PressurePlateBuffer[ClientID] = NULL;
+		err_display((char*)"send()");
+		return false;
+	}
+	static CommunicationData2 CommunicationData_SubInfo;
+	GameProcessFunc::ComPlayerBodyIndex(CommunicationData_SubInfo.Player_Index);
+	CommunicationData_SubInfo.Player_HP = PlayerBuffer[ClientID]->GetHP();
+	CommunicationData_SubInfo.Boss_HP = (BossObj != NULL) ? BossObj->GetHP() : 0;
+	CommunicationData_SubInfo.GameFail = GameProcessFunc::CheckGameFail(ClientID);
+	CommunicationData_SubInfo.GameClear = GameProcessFunc::CheckGameClear();
+	for (int i = 0; i < MAX_CLIENT; ++i)
+		CommunicationData_SubInfo.bPlayerHited[i] = (PlayerBuffer[i] != NULL) ? !PlayerBuffer[i]->CheckHitDealayComplete() : false;
+	retval = send(sock, (char*)&CommunicationData_SubInfo, sizeof(CommunicationData2), 0);
+	if (retval == SOCKET_ERROR)
+	{
+		delete PlayerBuffer[ClientID];
+		PlayerBuffer[ClientID] = NULL;
+		//delete PressurePlateBuffer[ClientID];
+		//PressurePlateBuffer[ClientID] = NULL;
 		err_display((char*)"send()");
 		return false;
 	}
@@ -215,119 +248,62 @@ void GameProcessFunc::ProcessInput(float ElapsedTime)
 	{
 		if (PlayerBuffer[i] != NULL)
 		{
-			KeyState = PlayerBuffer[i]->GetKeyBuffer();
-			ArrowKeyStack = PlayerBuffer[i]->GetArrowKeyStack();
-			if (ArrowKeyStack->size() > 0) ArrowKey = ArrowKeyStack->back();
-			else ArrowKey = -1;
-
-			Vector newForce = { 0.0f, 0.0f };
-			if (KeyState['w'] == true)
+			if (GameProcessFunc::CheckGameFail(i) == false)
 			{
-				// Animation Frame Set(UpView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqBody();
-				seq.x++;
-				if (seq.y != 0) {
-					seq.y = 0;
-					seq.x = 0;
+				KeyState = PlayerBuffer[i]->GetKeyBuffer();
+				ArrowKeyStack = PlayerBuffer[i]->GetArrowKeyStack();
+				if (ArrowKeyStack->size() > 0) ArrowKey = ArrowKeyStack->back();
+				else ArrowKey = -1;
+
+				Vector newForce = { 0.0f, 0.0f };
+				if (KeyState['w'] == true)
+					newForce.j += PLAYER_SPEED;
+				if (KeyState['a'] == true)
+					newForce.i -= PLAYER_SPEED;
+				if (KeyState['s'] == true)
+					newForce.j -= PLAYER_SPEED;
+				if (KeyState['d'] == true)
+					newForce.i += PLAYER_SPEED;
+				
+				// 힘의 크기가 0이 아니라면 오브젝트에 힘을 가한다.
+				if (!equal(newForce.magnitude(), 0.0f))
+				{
+					normalize(newForce);
+					PlayerBuffer[i]->ApplyForce(newForce, ElapsedTime);
 				}
-				if (seq.x > 9) seq.x = 0;
-				newForce.j += PLAYER_SPEED;
-				PlayerBuffer[i]->SetSeqBody(seq);
-				// ...
-			}
-			if (KeyState['a'] == true)
-			{
-				// Animation Frame Set(LeftView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqBody();
-				seq.x++;
-				if (seq.y != 1) {
-					seq.y = 1;
-					seq.x = 0;
+
+				if (ArrowKey == 0x0065) // 0x0065 : GLUT_KEY_UP
+				{
+					if (PlayerBuffer[i]->CheckBulletShootDealayComplete())
+					{
+						BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_UP);
+						PlayerBuffer[i]->InitBulletShootDealay();
+					}
 				}
-				if (seq.x > 9) seq.x = 0;
-				newForce.i -= PLAYER_SPEED;
-				PlayerBuffer[i]->SetSeqBody(seq);
-				//...
-			}
-			if (KeyState['s'] == true)
-			{
-				// Animation Frame Set(DownView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqBody();
-				seq.x--;
-				if (seq.y != 0) {
-					seq.y = 0;
-					seq.x = 9;
+				if (ArrowKey == 0x0064) // 0x0064 : GLUT_KEY_LEFT
+				{
+					if (PlayerBuffer[i]->CheckBulletShootDealayComplete())
+					{
+						BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_LEFT);
+						PlayerBuffer[i]->InitBulletShootDealay();
+					}
 				}
-				if (seq.x < 0) seq.x = 9;
-				newForce.j -= PLAYER_SPEED;
-				PlayerBuffer[i]->SetSeqBody(seq);
-				//...
-			}
-			if (KeyState['d'] == true)
-			{
-				// Animation Frame Set(RightView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqBody();
-				seq.x++;
-				if (seq.y != 2) {
-					seq.y = 2;
-					seq.x = 0;
+				if (ArrowKey == 0x0067) // 0x0067 : GLUT_KEY_DOWN
+				{
+					if (PlayerBuffer[i]->CheckBulletShootDealayComplete())
+					{
+						BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_DOWN);
+						PlayerBuffer[i]->InitBulletShootDealay();
+					}
 				}
-				if (seq.x > 9) seq.x = 0;
-				newForce.i += PLAYER_SPEED;
-				PlayerBuffer[i]->SetSeqBody(seq);
-				// ...
-			}
-
-			// 힘의 크기가 0이 아니라면 오브젝트에 힘을 가한다.
-			if (!equal(newForce.magnitude(), 0.0f))
-			{
-				normalize(newForce);
-				PlayerBuffer[i]->ApplyForce(newForce, ElapsedTime);
-			}
-
-			if (ArrowKey == 0x0065) // 0x0065 : GLUT_KEY_UP
-			{
-				// Animation Frame Set(UpView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqHead();
-				if (seq.x == 5)	seq.x = 4;
-				else seq.x = 5;
-				PlayerBuffer[i]->SetSeqHead(seq);
-				// ...
-
-				BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_UP);
-			}
-			if (ArrowKey == 0x0064) // 0x0064 : GLUT_KEY_LEFT
-			{
-				// Animation Frame Set(LeftView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqHead();
-				if (seq.x == 7)	seq.x = 6;
-				else seq.x = 7;
-				PlayerBuffer[i]->SetSeqHead(seq);
-				//...
-
-				BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_LEFT);
-			}
-			if (ArrowKey == 0x0067) // 0x0067 : GLUT_KEY_DOWN
-			{
-				// Animation Frame Set(DownView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqHead();
-				if (seq.x == 1)	seq.x = 0;
-				else seq.x = 1;
-				PlayerBuffer[i]->SetSeqHead(seq);
-				//...
-
-				BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_DOWN);
-			}
-			if (ArrowKey == 0x0066) // 0x0066 : GLUT_KEY_RIGHT
-			{
-				// Animation Frame Set(RightView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqHead();
-				if (seq.x == 3)	seq.x = 2;
-				else seq.x = 3;
-				PlayerBuffer[i]->SetSeqHead(seq);
-				// ...
-
-				BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_RIGHT);
+				if (ArrowKey == 0x0066) // 0x0066 : GLUT_KEY_RIGHT
+				{
+					if (PlayerBuffer[i]->CheckBulletShootDealayComplete())
+					{
+						BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_RIGHT);
+						PlayerBuffer[i]->InitBulletShootDealay();
+					}
+				}
 			}
 		}
 	}
@@ -372,7 +348,7 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 	{
 		// Set BossBoundingRect
 		BossPos = BossObj->GetPosition();
-		float UnderOrdered_Offset_Y = -((BOSS_HEIGHT * 0.5f) - BOSS_BOUNDINGBOX_HEIGHT) * 0.4f;
+		float UnderOrdered_Offset_Y = -((BOSS_HEIGHT * 0.5f) - BOSS_BOUNDINGBOX_HEIGHT) * 0.36f;
 		// UnderOrdered_Offset_Y: 2차원 평면에서의 깊이감을 나타내기 위해 BoundingRect를 실제 크기보다 작게 하고 이를
 		// 실제 Bottom과 BoudingRect의 Bottom을 같게 아래쪽 맞춤으로 정렬함
 		BossBoundRect.Left = BossPos.x - BOSS_BOUNDINGBOX_WIDTH / 2;
@@ -381,23 +357,28 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 		BossBoundRect.Bottom = BossPos.y - BOSS_BOUNDINGBOX_HEIGHT / 2 + UnderOrdered_Offset_Y;
 
 		// ProcessCollision Wall-Boss
-		if (CollisionFunc::CollideWndBoundary(BossBoundRect, LandBoundRect))
+		if (equal(BossPos.z, 0.0f))
 		{
-			if (BossBoundRect.Left < LandBoundRect.Left) // Collision left-side
-				BossPos.x += LandBoundRect.Left - BossBoundRect.Left;
-			if (BossBoundRect.Right > LandBoundRect.Right) // Collision right-side
-				BossPos.x += LandBoundRect.Right - BossBoundRect.Right;
-			if (BossBoundRect.Bottom < LandBoundRect.Bottom) // Collision down-side
-				BossPos.y += LandBoundRect.Bottom - BossBoundRect.Bottom;
-			if (BossBoundRect.Top > LandBoundRect.Top) // Collision up-side
-				BossPos.y += LandBoundRect.Top - BossBoundRect.Top;
+			if (CollisionFunc::CollideWndBoundary(BossBoundRect, LandBoundRect))
+			{
+				if (BossBoundRect.Left < LandBoundRect.Left) // Collision left-side
+					BossPos.x += LandBoundRect.Left - BossBoundRect.Left;
+					if (BossBoundRect.Right > LandBoundRect.Right) // Collision right-side
+						BossPos.x += LandBoundRect.Right - BossBoundRect.Right;
+					if (BossBoundRect.Bottom < LandBoundRect.Bottom) // Collision down-side
+						BossPos.y += LandBoundRect.Bottom - BossBoundRect.Bottom;
+					if (BossBoundRect.Top > LandBoundRect.Top) // Collision up-side
+						BossPos.y += LandBoundRect.Top - BossBoundRect.Top;
 
-			BossObj->SetPosition(BossPos);
+				BossObj->SetPosition(BossPos);
+			}
 		}
 	}
 
+	static bool Hited_ForBoss[MAX_CLIENT] = { false, };
 	for (int i = 0; i < MAX_CLIENT; ++i)
 	{
+		Hited_ForBoss[i] = false;
 		if (PlayerBuffer[i] != NULL)
 		{
 			// Set PlayerBoundingRect
@@ -410,30 +391,27 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 			// ProcessCollision Player-Wall
 			if (CollisionFunc::CollideWndBoundary(PlayerBoundRect, LandBoundRect))
 			{
-				Vector Wall_NormalVector; // 벽의 법선벡터
+				Vector Velocity = PlayerBuffer[i]->GetVelocity();
 				if (PlayerBoundRect.Left < LandBoundRect.Left) // Collision left-side
 				{
 					PlayerPos.x += LandBoundRect.Left - PlayerBoundRect.Left;
-					Wall_NormalVector.i = 1;
+					Velocity.i = 0;
 				}
 				if (PlayerBoundRect.Right > LandBoundRect.Right) // Collision right-side
 				{
 					PlayerPos.x += LandBoundRect.Right - PlayerBoundRect.Right;
-					Wall_NormalVector.i = -1;
+					Velocity.i = 0;
 				}
 				if (PlayerBoundRect.Bottom < LandBoundRect.Bottom) // Collision down-side
 				{
 					PlayerPos.y += LandBoundRect.Bottom - PlayerBoundRect.Bottom;
-					Wall_NormalVector.j = 1;
+					Velocity.j= 0;
 				}
 				if (PlayerBoundRect.Top > LandBoundRect.Top) // Collision up-side
 				{
 					PlayerPos.y += LandBoundRect.Top - PlayerBoundRect.Top;
-					Wall_NormalVector.j = -1;
+					Velocity.j = 0;
 				}
-				Vector Velocity = PlayerBuffer[i]->GetVelocity();
-				normalize(Wall_NormalVector); // 충돌 면이 2개 이상일 경우 정규기저벡터를 만들어줘야 한다.
-				Velocity.slidingAbout(Wall_NormalVector);
 				PlayerBuffer[i]->SetBodyPosition(PlayerPos);
 				PlayerBuffer[i]->SetVelocity(Velocity);
 			}
@@ -459,7 +437,7 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 			}
 
 			// ProcessCollision Player-Boss
-			if (BossObj != NULL)
+			if (BossObj != NULL && GameProcessFunc::CheckGameClear() == false && GameProcessFunc::CheckGameFail(i) == false)
 			{
 				if (equal(BossPos.z, 0.0f))
 				{
@@ -511,6 +489,8 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 							u_int newHP = ((int)PlayerHP - BOSS_BULLET_DAMAGE > 0) ? PlayerHP - BOSS_BULLET_DAMAGE : 0;
 							PlayerBuffer[i]->SetHP(newHP);
 							PlayerBuffer[i]->InitHitDealay();
+							//std::cout << "Player[" << i << "] HP: " << newHP << std::endl;
+							Hited_ForBoss[i] = true;
 						}
 					}
 				}
@@ -547,7 +527,7 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 						u_int newHP = ((int)BossHP - PLAYER_BULLET_DAMAGE > 0) ? BossHP - PLAYER_BULLET_DAMAGE : 0;
 						BossObj->SetPosition(BossPos);
 						BossObj->SetHP(newHP);
-						std::cout << "Boss HP: " << newHP << std::endl;
+						//std::cout << "Boss HP: " << newHP << std::endl;
 						DeleteBullet = true;
 					}
 				}
@@ -558,7 +538,7 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 			{
 				for (int j = 0; j < MAX_CLIENT; ++j)
 				{
-					if (PlayerBuffer[j] != NULL)
+					if (PlayerBuffer[j] != NULL && GameProcessFunc::CheckGameClear() == false && GameProcessFunc::CheckGameFail(j) == false)
 					{
 						// Set PlayerBoundingRect
 						PlayerPos = PlayerBuffer[j]->GetBodyPosition();
@@ -570,16 +550,17 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 						if (CollisionFunc::IntersectRect(&intersectRect, BulletBoundRect, PlayerBoundRect))
 						{
 							// 넉백
-							PlayerPos += (BulletBuffer[i]->GetVelocity() / RENDER_TRANSLATION_SCALE) * 2;
+							PlayerPos += (BulletBuffer[i]->GetVelocity() / RENDER_TRANSLATION_SCALE) * 6;
 							PlayerBuffer[j]->SetBodyPosition(PlayerPos);
 							// 피격당하는 딜레이 확인 후 체력 감소
-							if (PlayerBuffer[j]->CheckHitDealayComplete())
+							if (Hited_ForBoss[i] == false && PlayerBuffer[j]->CheckHitDealayComplete())
 							{
 								u_int PlayerHP = PlayerBuffer[j]->GetHP();
 								u_int newHP = ((int)PlayerHP - BOSS_BULLET_DAMAGE > 0) ? PlayerHP - BOSS_BULLET_DAMAGE : 0;
 								PlayerBuffer[j]->SetHP(newHP);
 								PlayerBuffer[j]->InitHitDealay();
-								std::cout << "Player[" << j << "] HP: " << newHP << std::endl;
+								//std::cout << "Player[" << j << "] HP: " << newHP << std::endl;
+								Hited_ForBoss[i] = true;
 							}
 							DeleteBullet = true;
 						}
@@ -658,16 +639,11 @@ void GameProcessFunc::BulletShoot(bool Possesion, Point Pos, Vector Velocity, un
 			bossShootNum = rand() % 4 + 7;
 			currentShoot = 0;
 			while (currentShoot < bossShootNum) {
-				for (int i = 0; i < MAX_BULLET; ++i)
+				for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
 				{
 					if (BulletBuffer[i] == NULL)
 					{
-						Point target = BossGetPoint();
-
 						newVelocity.i = cos(float(rand() % 45) / 180 * PI);
-
-						if (target.x - BossObj->GetPosition().x < 0)
-							newVelocity.i = -newVelocity.i;
 
 						if (!(rand() % 2))
 							newVelocity.j = sin(float(rand() % 45) / 180 * PI);
@@ -689,10 +665,39 @@ void GameProcessFunc::BulletShoot(bool Possesion, Point Pos, Vector Velocity, un
 			break;
 
 		case SHOOT_PATTERN_2:
+			bossShootNum = rand() % 4 + 7;
+			currentShoot = 0;
+			while (currentShoot < bossShootNum) {
+				for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
+				{
+					if (BulletBuffer[i] == NULL)
+					{
+						newVelocity.i = -cos(float(rand() % 45) / 180 * PI);
+
+						if (!(rand() % 2))
+							newVelocity.j = sin(float(rand() % 45) / 180 * PI);
+						else
+							newVelocity.j = -sin(float(rand() % 45) / 180 * PI);
+
+						BulletBuffer[i] = new Bullet();
+						BulletBuffer[i]->SetPossesion(false);
+						BulletBuffer[i]->SetPosition(newPoint);
+						BulletBuffer[i]->SetVelocity(newVelocity * BOSS_BULLET_SPEED);
+						BulletBuffer[i]->SetMass(mass);
+						BulletBuffer[i]->SetFrictionFactor(frictionFactor);
+						BulletBuffer[i]->SetDamage(Damage);
+						break;
+					}
+				}
+				currentShoot++;
+			}
+			break;
+
+		case SHOOT_PATTERN_3:
 			bossShootNum = 8;
 			currentShoot = 0;
 			while (currentShoot < bossShootNum) {
-				for (int i = 0; i < MAX_BULLET; ++i)
+				for (int i = 0; i < MAX_OBJECT - (MAX_CLIENT * 2 + 1); ++i)
 				{
 					if (BulletBuffer[i] == NULL)
 					{
@@ -713,9 +718,6 @@ void GameProcessFunc::BulletShoot(bool Possesion, Point Pos, Vector Velocity, un
 				}
 				currentShoot++;
 			}
-			break;
-
-		case SHOOT_PATTERN_3:
 			break;
 		}
 	}
@@ -793,6 +795,7 @@ void GameProcessFunc::ResetCommunicationBuffer()
 
 bool GameProcessFunc::CheckBossRaidStart()
 {
+	int NoPlayers = 0;
 	for (int i = 0; i < MAX_CLIENT; ++i)
 	{
 		if (PressurePlateBuffer[i] != NULL)
@@ -800,8 +803,10 @@ bool GameProcessFunc::CheckBossRaidStart()
 			if (PressurePlateBuffer[i]->CheckPressed() != true)
 				return false;
 		}
+		else ++NoPlayers;
 	}
-	return true;
+	if (NoPlayers == MAX_CLIENT) return false;
+	else return true;
 }
 
 void GameProcessFunc::BossPattern(float ElapsedTime)
@@ -1043,6 +1048,14 @@ Point GameProcessFunc::BossGetPoint()
 	Point newPoint;
 	int randomPlayer;
 
+	int nullPlayerCnt = 0;
+	for (int i = 0; i < MAX_CLIENT; ++i)
+	{
+		if (PlayerBuffer[i] == NULL)
+			nullPlayerCnt++;
+	}
+	if (nullPlayerCnt == MAX_CLIENT) return newPoint;
+
 	while (1) {
 		randomPlayer = rand() % MAX_CLIENT;
 		if (PlayerBuffer[randomPlayer] != NULL) {
@@ -1054,4 +1067,25 @@ Point GameProcessFunc::BossGetPoint()
 	//std::cout << "새 위치 : " << "(" << newPoint.x << "," << newPoint.y << "," << newPoint.z << ")" << std::endl;
 
 	return newPoint;
+}
+
+bool GameProcessFunc::CheckGameClear()
+{
+	if (BossObj != NULL)
+	{
+		if (BossObj->GetHP() > 0)
+			return false;
+		else return true;
+	}
+	else return false;
+}
+
+bool GameProcessFunc::CheckGameFail(int ClientID)
+{
+	if (PlayerBuffer[ClientID] != NULL)
+	{
+		if (PlayerBuffer[ClientID]->GetHP() > 0) return false;
+		else return true;
+	}
+	else return false;
 }

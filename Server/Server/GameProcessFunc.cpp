@@ -329,8 +329,8 @@ void GameProcessFunc::ProcessPhisics(float ElapsedTime)
 
 void GameProcessFunc::ProcessCollision(float ElapsedTime)
 {
-	static Point PlayerPos, BossPos, PressurePlatePos, BulletPos;
-	static fRECT PlayerBoundRect, BossBoundRect, PressurePlateBoundRect, BulletBoundRect, LandBoundRect, intersectRect;
+	Point PlayerPos, BossPos, PressurePlatePos, BulletPos;
+	fRECT PlayerBoundRect, BossBoundRect, PressurePlateBoundRect, BulletBoundRect, LandBoundRect, intersectRect;
 	static const float WorldWidth = WND_WIDTH / RENDER_TRANSLATION_SCALE;
 	static const float WorldHeight = WND_HEIGHT / RENDER_TRANSLATION_SCALE;
 	static const float WorldLeftMargine = BACKGROUND_LEFT_MARGINE / RENDER_TRANSLATION_SCALE;
@@ -375,10 +375,8 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 		}
 	}
 
-	static bool Hited_ForBoss[MAX_CLIENT] = { false, };
 	for (int i = 0; i < MAX_CLIENT; ++i)
 	{
-		Hited_ForBoss[i] = false;
 		if (PlayerBuffer[i] != NULL)
 		{
 			// Set PlayerBoundingRect
@@ -490,7 +488,6 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 							PlayerBuffer[i]->SetHP(newHP);
 							PlayerBuffer[i]->InitHitDealay();
 							//std::cout << "Player[" << i << "] HP: " << newHP << std::endl;
-							Hited_ForBoss[i] = true;
 						}
 					}
 				}
@@ -553,14 +550,13 @@ void GameProcessFunc::ProcessCollision(float ElapsedTime)
 							PlayerPos += (BulletBuffer[i]->GetVelocity() / RENDER_TRANSLATION_SCALE) * 6;
 							PlayerBuffer[j]->SetBodyPosition(PlayerPos);
 							// 피격당하는 딜레이 확인 후 체력 감소
-							if (Hited_ForBoss[i] == false && PlayerBuffer[j]->CheckHitDealayComplete())
+							if (PlayerBuffer[j]->CheckHitDealayComplete())
 							{
 								u_int PlayerHP = PlayerBuffer[j]->GetHP();
 								u_int newHP = ((int)PlayerHP - BOSS_BULLET_DAMAGE > 0) ? PlayerHP - BOSS_BULLET_DAMAGE : 0;
 								PlayerBuffer[j]->SetHP(newHP);
 								PlayerBuffer[j]->InitHitDealay();
 								//std::cout << "Player[" << j << "] HP: " << newHP << std::endl;
-								Hited_ForBoss[i] = true;
 							}
 							DeleteBullet = true;
 						}

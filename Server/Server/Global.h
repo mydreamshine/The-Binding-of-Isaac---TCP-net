@@ -103,3 +103,8 @@
 #define SHOOT_PATTERN_1     0
 #define SHOOT_PATTERN_2     1
 #define SHOOT_PATTERN_3     2
+
+
+
+//coolTimeOption
+#define BULLETCOOLTIME 0.2f

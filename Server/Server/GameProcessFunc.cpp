@@ -267,49 +267,56 @@ void GameProcessFunc::ProcessInput(float ElapsedTime)
 				PlayerBuffer[i]->ApplyForce(newForce, ElapsedTime);
 			}
 
-			if (ArrowKey == 0x0065) // 0x0065 : GLUT_KEY_UP
-			{
-				// Animation Frame Set(UpView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqHead();
-				if (seq.x == 5)	seq.x = 4;
-				else seq.x = 5;
-				PlayerBuffer[i]->SetSeqHead(seq);
-				// ...
 
-				BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_UP);
-			}
-			if (ArrowKey == 0x0064) // 0x0064 : GLUT_KEY_LEFT
-			{
-				// Animation Frame Set(LeftView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqHead();
-				if (seq.x == 7)	seq.x = 6;
-				else seq.x = 7;
-				PlayerBuffer[i]->SetSeqHead(seq);
-				//...
+			if (PlayerBuffer[i]->CanShot()) {
+				if (ArrowKey == 0x0065) // 0x0065 : GLUT_KEY_UP
+				{
+					// Animation Frame Set(UpView-Sequance)
+					seq = PlayerBuffer[i]->GetSeqHead();
+					if (seq.x == 5)	seq.x = 4;
+					else seq.x = 5;
+					PlayerBuffer[i]->SetSeqHead(seq);
+					// ...
 
-				BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_LEFT);
-			}
-			if (ArrowKey == 0x0067) // 0x0067 : GLUT_KEY_DOWN
-			{
-				// Animation Frame Set(DownView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqHead();
-				if (seq.x == 1)	seq.x = 0;
-				else seq.x = 1;
-				PlayerBuffer[i]->SetSeqHead(seq);
-				//...
+					BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_UP);
+					PlayerBuffer[i]->ResetShotCooltime();
+				}
+				if (ArrowKey == 0x0064) // 0x0064 : GLUT_KEY_LEFT
+				{
+					// Animation Frame Set(LeftView-Sequance)
+					seq = PlayerBuffer[i]->GetSeqHead();
+					if (seq.x == 7)	seq.x = 6;
+					else seq.x = 7;
+					PlayerBuffer[i]->SetSeqHead(seq);
+					//...
 
-				BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_DOWN);
-			}
-			if (ArrowKey == 0x0066) // 0x0066 : GLUT_KEY_RIGHT
-			{
-				// Animation Frame Set(RightView-Sequance)
-				seq = PlayerBuffer[i]->GetSeqHead();
-				if (seq.x == 3)	seq.x = 2;
-				else seq.x = 3;
-				PlayerBuffer[i]->SetSeqHead(seq);
-				// ...
+					BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_LEFT);
+					PlayerBuffer[i]->ResetShotCooltime();
+				}
+				if (ArrowKey == 0x0067) // 0x0067 : GLUT_KEY_DOWN
+				{
+					// Animation Frame Set(DownView-Sequance)
+					seq = PlayerBuffer[i]->GetSeqHead();
+					if (seq.x == 1)	seq.x = 0;
+					else seq.x = 1;
+					PlayerBuffer[i]->SetSeqHead(seq);
+					//...
 
-				BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_RIGHT);
+					BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_DOWN);
+					PlayerBuffer[i]->ResetShotCooltime();
+				}
+				if (ArrowKey == 0x0066) // 0x0066 : GLUT_KEY_RIGHT
+				{
+					// Animation Frame Set(RightView-Sequance)
+					seq = PlayerBuffer[i]->GetSeqHead();
+					if (seq.x == 3)	seq.x = 2;
+					else seq.x = 3;
+					PlayerBuffer[i]->SetSeqHead(seq);
+					// ...
+
+					BulletShoot(true, PlayerBuffer[i]->GetHeadPosition(), PlayerBuffer[i]->GetVelocity(), SHOOT_RIGHT);
+					PlayerBuffer[i]->ResetShotCooltime();
+				}
 			}
 		}
 	}

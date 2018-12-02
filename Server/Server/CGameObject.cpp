@@ -13,6 +13,9 @@ Player::Player()
 
 void Player::Update(float ElapsedTime)
 {
+	if (m_ShotCooltime > -FLT_EPSILON)
+		m_ShotCooltime -= ElapsedTime;
+
 	if (!equal(m_Velocity.magnitude(), 0.0f))
 	{
 		// 중력(Gravity) = mg (g: 중력가속도(9.8m/s²)
@@ -64,6 +67,19 @@ void Player::ApplyForce(Vector Force, float ElapsedTime)
 	// v = a * s = (m/s²) * s
 	m_Velocity += m_Acceleration * ElapsedTime;
 	if (equal(m_Velocity.magnitude(), 0.0f)) m_Velocity = { 0.0f, 0.0f, 0.0f };
+}
+
+bool Player::CanShot()
+{
+	if (m_ShotCooltime < FLT_EPSILON)
+		return true;
+
+	return false;
+}
+
+void Player::ResetShotCooltime()
+{
+	m_ShotCooltime = m_InitShotCooltime;
 }
 
 Boss::Boss()

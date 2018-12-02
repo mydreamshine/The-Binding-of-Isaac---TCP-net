@@ -217,7 +217,7 @@ bool GameProcessFunc::SendCommunicationData(SOCKET sock, int ClientID)
 		err_display((char*)"send()");
 		return false;
 	}
-	static CommunicationData2 CommunicationData_SubInfo;
+	CommunicationData2 CommunicationData_SubInfo;
 	GameProcessFunc::ComPlayerBodyIndex(CommunicationData_SubInfo.Player_Index);
 	CommunicationData_SubInfo.Player_HP = PlayerBuffer[ClientID]->GetHP();
 	CommunicationData_SubInfo.Boss_HP = (BossObj != NULL) ? BossObj->GetHP() : 0;

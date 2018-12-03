@@ -45,6 +45,10 @@ private:
 	bool      m_KeyState[256];
 	bool      m_SpecialKeyState[246];
 	list<int> m_ArrowKeyStack;
+
+	float m_InitShotCooltime = BULLETCOOLTIME;
+	float m_ShotCooltime = 0.f;
+	
 public:
 	Player();
 	~Player() = default;
@@ -70,6 +74,12 @@ public:
 
 	void Update(float ElapsedTime);
 	void ApplyForce(Vector Force, float ElapsedTime);
+
+	//총알을 발사 할 수 있는지 반환
+	bool CanShot();
+	//총알에 쿨타임을 리셋함
+	void ResetShotCooltime();
+
 };
 
 

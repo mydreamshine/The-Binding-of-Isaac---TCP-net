@@ -12,7 +12,7 @@
 
 //Frame option
 #define DRAWFRAME 60
-#define COMUNICATIONFRAME 20
+#define COMUNICATIONFRAME 15
 
 
 // Window Option

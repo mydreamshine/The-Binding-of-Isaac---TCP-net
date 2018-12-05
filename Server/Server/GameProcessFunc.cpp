@@ -212,7 +212,12 @@ bool GameProcessFunc::SendCommunicationData(SOCKET sock, int ClientID)
 	}
 	CommunicationData2 CommunicationData_SubInfo;
 	CommunicationData_SubInfo.Player_ClientID = ClientID;
-	CommunicationData_SubInfo.Boss_HP = (BossObj != NULL) ? BossObj->GetHP() : -1;
+	if (CheckBossRaidStart() == false)
+		CommunicationData_SubInfo.Boss_HP = -1;
+	else if (BossObj != NULL)
+		CommunicationData_SubInfo.Boss_HP = BossObj->GetHP();
+	else if (BossObj == NULL)
+		CommunicationData_SubInfo.Boss_HP = 0;
 	for (int i = 0; i < MAX_CLIENT; ++i)
 	{
 		CommunicationData_SubInfo.Player_Index[i] = MAX_CLIENT + i * 2;
@@ -802,17 +807,25 @@ bool GameProcessFunc::CheckBossRaidStart()
 void GameProcessFunc::BossPattern(float ElapsedTime)
 {
 	if (BossObj == NULL) return;
-	switch (BossObj->GetPattern())
+	else if (BossObj->GetHP() == 0)
 	{
-	case 1:
-		BossJump(ElapsedTime);
-		break;
-	case 2:
-		BossHighJump(ElapsedTime);
-		break;
-	case 3:
-		BossShoot(ElapsedTime);
-		break;
+		delete BossObj;
+		BossObj = NULL;
+	}
+	else
+	{
+		switch (BossObj->GetPattern())
+		{
+		case 1:
+			BossJump(ElapsedTime);
+			break;
+		case 2:
+			BossHighJump(ElapsedTime);
+			break;
+		case 3:
+			BossShoot(ElapsedTime);
+			break;
+		}
 	}
 }
 

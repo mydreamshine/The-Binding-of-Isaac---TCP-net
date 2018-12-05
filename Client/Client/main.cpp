@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);					     //
 	glutInitWindowPosition(0, 0);												     //
 	glutInitWindowSize(WND_WIDTH, WND_HEIGHT);									     //
-	glutCreateWindow("The Binding of Isaac - Client");							     //
+	int hWnd = glutCreateWindow("The Binding of Isaac - Client");							     //
 	srand(static_cast <unsigned> (time(0)));									     //
 																				     //
 	glewInit();																	     //

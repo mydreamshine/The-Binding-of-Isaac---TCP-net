@@ -6,22 +6,11 @@
 
 using namespace std;
 
-HANDLE hCallCommunicationEvent;
-HANDLE hCompleteCommunicaitionEvent;
 bool   bProgramExit = false;
-
-
-DWORD WINAPI ShowGameState(LPVOID arg)
-{
-	int ShowType = *(int*)arg;
-	int retval;
-	if(ShowType == 0)
-		retval = MessageBox(NULL, "플레이어의 체력이 다했습니다.\n 게임을 종료하시겠습니까?", "게임 플레이 실패", MB_OKCANCEL);
-	if (ShowType == 1)
-		retval = MessageBox(NULL, "축하합니다!\n게임을 클리어 하셨습니다!", "게임 클리어", MB_OK);
-	if (retval == IDOK) bProgramExit = true;
-	return 0;
-}
+bool   bRecvComplete = false;
+HANDLE hCopyStart;
+HANDLE hCopyComplete;
+CRITICAL_SECTION cs;
 
 CPlayScene::~CPlayScene()
 {
@@ -29,8 +18,9 @@ CPlayScene::~CPlayScene()
 		m_pRenderer->DeleteTexture(m_TextureIDs[i]);
 	if (m_pRenderer) delete m_pRenderer;
 
-	CloseHandle(hCallCommunicationEvent);
-	CloseHandle(hCompleteCommunicaitionEvent);
+	CloseHandle(hCopyStart);
+	CloseHandle(hCopyComplete);
+	DeleteCriticalSection(&cs);
 }
 
 bool CPlayScene::InitialRenderer(int windowSizeX, int windowSizeY, float TranslationScale)
@@ -48,14 +38,26 @@ bool CPlayScene::InitialRenderer(int windowSizeX, int windowSizeY, float Transla
 	m_TextureIDs[KIND_PRESSURE_PLATE] = m_pRenderer->CreatePngTexture("./Resource/Graphic/PressurePlate.png");
 	m_TextureIDs[KIND_PLAYER_HEART] = m_pRenderer->CreatePngTexture("./Resource/Graphic/Heart.png");
 	m_TextureIDs[KIND_BOSS_NAME] = m_pRenderer->CreatePngTexture("./Resource/Graphic/Boss_Name.png");
+	m_TextureIDs[KIND_GAME_FAIL] = m_pRenderer->CreatePngTexture("./Resource/Graphic/FAIL.png");
+	m_TextureIDs[KIND_GAME_CLEAR] = m_pRenderer->CreatePngTexture("./Resource/Graphic/CLEAR.png");
+	m_TextureIDs[KIND_PLAYER_DEAD] = m_pRenderer->CreatePngTexture("./Resource/Graphic/Isaac_Dead.png");
 
 	return m_pRenderer->IsInitialized();
 }
 
 bool CPlayScene::InitialObjects()
 {
-	hCallCommunicationEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
-	hCompleteCommunicaitionEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	m_GameInfo.Player_ClientID = -1;
+	m_GameInfo.Boss_HP = -1;
+	for (int i = 0; i < MAX_CLIENT; ++i)
+	{
+		m_GameInfo.Player_Index[i] = -1;
+		m_GameInfo.Player_Hited[i] = false;
+		m_GameInfo.Player_HP[i] = -1;
+	}
+	hCopyStart = CreateEvent(NULL, FALSE, FALSE, NULL);
+	hCopyComplete = CreateEvent(NULL, FALSE, FALSE, NULL);
+	InitializeCriticalSection(&cs);
 	return true;
 }
 
@@ -82,29 +84,21 @@ void CPlayScene::SpecialKeyUp(int key, int x, int y)
 
 void CPlayScene::UpdateScene(float elapsedTime, float* com_elapsedTime)
 {
-	//업데이트에서 일정 시간마다 서버와의 통신 스레드를 부르도록 설정
-
-	static float communication_eTime = 0.0f;
-	communication_eTime += elapsedTime;
-
-	//일정 시간 마다 서버와의 통신을 함
-	if (1.f / CPS < (communication_eTime + 1.f / FPS)) {
-		//서버와의 통신 설정  //서버에서 그릴 것들을 가져옴
-		SetEvent(hCallCommunicationEvent);
-
-		//통신이 완료 될 때 까지 기다림
-		WaitForSingleObject(hCompleteCommunicaitionEvent, INFINITE);
-
+	// 매 업데이트마다 Recv가 완료된 상태인지 확인
+	EnterCriticalSection(&cs);
+	bool RecvComplete = bRecvComplete;
+	LeaveCriticalSection(&cs);
+	if (RecvComplete) {
 		static DWORD PrevComTime = 0;
 		static DWORD Cur_ComTime = 0;
+
+		SetEvent(hCopyStart);
+		WaitForSingleObject(hCopyComplete, INFINITE);
 		if (PrevComTime == 0)
 			PrevComTime = timeGetTime();
 		Cur_ComTime = timeGetTime();
 		*com_elapsedTime = (float)(Cur_ComTime - PrevComTime) / 1000.0f;
 		PrevComTime = Cur_ComTime;
-
-		//커뮤니케이션 시간이 지난 시간을 초기화
-		communication_eTime = 0;
 	}
 	else {
 		//통신을 하지 않을 경우 클라 자체에서 랜더링을 위한 데이터를 계산함
@@ -197,41 +191,47 @@ void CPlayScene::UpdateScene(float elapsedTime, float* com_elapsedTime)
 			}
 		}
 	}
-	
 }
 
 void CPlayScene::RendrScene()
 {
 	// Draw Background
 	m_pRenderer->DrawTextureRect(0.0f, 0.0f, 0.0f, WND_WIDTH, WND_HEIGHT, 1.0f, 1.0f, 1.0f, 1.0f, m_TextureIDs[KIND_BACKGROND]);
+	if (m_GameInfo.Player_ClientID >= 0)
+	{
+		if(m_GameInfo.Boss_HP == 0)
+			m_pRenderer->DrawTextureRect(0.0f, 0.0f, 0.0f, 599, 259, 1.0f, 1.0f, 1.0f, 1.0f, m_TextureIDs[KIND_GAME_FAIL]);
+		else if (m_GameInfo.Player_HP[m_GameInfo.Player_ClientID] == 0)
+			m_pRenderer->DrawTextureRect(0.0f, 0.0f, 0.0f, 545, 253, 1.0f, 1.0f, 1.0f, 1.0f, m_TextureIDs[KIND_GAME_FAIL]);
+	}
 
 	Point Pos;
-	POINT Pos_InTexture;
-	fSIZE Size;
+	POINT Pos_InTexture = { 0,0 };
+	fSIZE Size = { 0.0f, 0.0f, 0.0f };
 	COLOR Color = {1.0f, 1.0f, 1.0f, 1.0f};
 	int TextureID = 0;
-	int Animation_Sequence_X = 1;
-	int Animation_Sequence_Y = 1;
+	int Animation_Sequence_X = 0;
+	int Animation_Sequence_Y = 0;
 	
 	float PlayerHitColor[MAX_CLIENT];
-	static bool sign[MAX_CLIENT] = { false, };
+	static bool sign[MAX_CLIENT] = { false,false,false,false};
+	static LONG PlayerDeadSeq_X[MAX_CLIENT] = { 0,0,0,0 };
 	bool ColorChanged = false;
+	bool PlayerDeaded = false;
 	static int framecnt = 0;
 	framecnt = (framecnt + 1) % 4;
+	static int PlayerDeadFrame[MAX_CLIENT] = { 0, };
 
-	for (u_int i = 0; i < MAX_OBJECT; ++i)
+	for (int i = 0; i < MAX_OBJECT; ++i)
 	{
 		if (m_RenderObjects[i].Obj_Type != KIND_NULL)
 		{
-			// Obj_Type에 따른 렌더링
-			Pos = m_RenderObjects[i].Obj_Pos;
-			Pos_InTexture = m_RenderObjects[i].Obj_Pos_InTexture;
-
-			// Player Object 피격상태 렌더링
 			ColorChanged = false;
+			PlayerDeaded = false;
 			for (int j = 0; j < MAX_CLIENT; ++j)
 			{
-				if (m_GameInfo.Player_Index[j] == i && m_GameInfo.bPlayerHited[j] && framecnt == 3)
+				// Player Object 피격상태에 따른 색상 변경
+				if (m_GameInfo.Player_Index[j] == i && m_GameInfo.Player_Hited[j] && framecnt == 3)
 				{
 					PlayerHitColor[j] = (sign[j]) ? 1.0f : 0.2f;
 					Color = { PlayerHitColor[j], PlayerHitColor[j], PlayerHitColor[j], 1.0f };
@@ -240,56 +240,80 @@ void CPlayScene::RendrScene()
 				}
 				else if (m_GameInfo.Player_Index[j] + 1 == i)
 					ColorChanged = true;
+
+				// Player Object 생존상태에 따른 렌더 변경
+				if (m_GameInfo.Player_Index[j] == i && m_GameInfo.Player_HP[j] == 0)
+				{
+					PlayerDeadFrame[j] = (PlayerDeadFrame[j] + 1) % (FPS / MAX_PLAYER_DEAD_ANIMATION_SEQUENCE_X);
+					Pos = m_RenderObjects[i].Obj_Pos;
+					if(PlayerDeadFrame[j] == FPS / MAX_PLAYER_DEAD_ANIMATION_SEQUENCE_X - 1
+						&& PlayerDeadSeq_X[j] < MAX_PLAYER_DEAD_ANIMATION_SEQUENCE_X - 1)
+						PlayerDeadSeq_X[j]++;
+					Pos_InTexture.x = PlayerDeadSeq_X[j];
+					Size.Width = PLAYER_WIDTH / 2;
+					Size.Height = PLAYER_HEIGHT / 2;
+					TextureID = m_TextureIDs[KIND_PLAYER_DEAD];
+					Animation_Sequence_X = MAX_PLAYER_DEAD_ANIMATION_SEQUENCE_X;
+					Animation_Sequence_Y = MAX_PLAYER_DEAD_ANIMATION_SEQUENCE_Y;
+					if (m_GameInfo.Player_Index[j] + 1 == i + 1) i++;
+					PlayerDeaded = true;
+				}
 			}
 			if(ColorChanged == false)
 				Color = { 1.0f, 1.0f, 1.0f, 1.0f };
-			switch (m_RenderObjects[i].Obj_Type)
+
+
+			// Obj_Type에 따른 렌더링
+			if (PlayerDeaded == false)
 			{
-			case KIND_PLAYER_HEAD:
-				Size.Width = PLAYER_WIDTH / 2;
-				Size.Height = PLAYER_HEIGHT / 2;
-				TextureID = m_TextureIDs[KIND_PLAYER_HEAD];
-				Animation_Sequence_X = MAX_PLAYER_HEAD_ANIMATION_SEQUENCE_X;
-				Animation_Sequence_Y = MAX_PLAYER_HEAD_ANIMATION_SEQUENCE_Y;
-				break;
-			case KIND_PLAYER_BODY:
-				Size.Width = PLAYER_WIDTH / 2;
-				Size.Height = PLAYER_HEIGHT / 2;
-				TextureID = m_TextureIDs[KIND_PLAYER_BODY];
-				Animation_Sequence_X = MAX_PLAYER_BODY_ANIMATION_SEQUENCE_X;
-				Animation_Sequence_Y = MAX_PLAYER_BODY_ANIMATION_SEQUENCE_Y;
-				Pos.z = 0.5f / RENDER_TRANSLATION_SCALE;
-				break;
-			case KIND_BOSS:
-				Size.Width = BOSS_WIDTH / 2;
-				Size.Height = BOSS_HEIGHT / 2;
-				TextureID = m_TextureIDs[KIND_BOSS];
-				Animation_Sequence_X = MAX_BOSS_ANIMATION_SEQUENCE_X;
-				Animation_Sequence_Y = MAX_BOSS_ANIMATION_SEQUENCE_Y;
-				break;
-			case KIND_PRESSURE_PLATE:
-				Size.Width = PRESSURE_PLATE_WIDTH;
-				Size.Height = PRESSURE_PLATE_HEIGHT;
-				TextureID = m_TextureIDs[KIND_PRESSURE_PLATE];
-				Animation_Sequence_X = MAX_PRESSURE_PLATE_ANIMATION_SEQUENCE_X;
-				Animation_Sequence_Y = MAX_PRESSURE_PLATE_ANIMATION_SEQUENCE_Y;
-				break;
-			case KIND_BULLET_1:
-				Size.Width = BULLET_WIDTH;
-				Size.Height = BULLET_HEIGHT;
-				TextureID = m_TextureIDs[KIND_BULLET_1];
-				Animation_Sequence_X = 1;
-				Animation_Sequence_Y = 1;
-				break;
-			case KIND_BULLET_2:
-				Size.Width = BULLET_WIDTH;
-				Size.Height = BULLET_HEIGHT;
-				TextureID = m_TextureIDs[KIND_BULLET_2];
-				Animation_Sequence_X = 1;
-				Animation_Sequence_Y = 1;
-				break;
-			default:
-				break;
+				Pos = m_RenderObjects[i].Obj_Pos;
+				Pos_InTexture = m_RenderObjects[i].Obj_Pos_InTexture;
+				switch (m_RenderObjects[i].Obj_Type)
+				{
+				case KIND_PLAYER_HEAD:
+					Size.Width = PLAYER_WIDTH / 2;
+					Size.Height = PLAYER_HEIGHT / 2;
+					TextureID = m_TextureIDs[KIND_PLAYER_HEAD];
+					Animation_Sequence_X = MAX_PLAYER_HEAD_ANIMATION_SEQUENCE_X;
+					Animation_Sequence_Y = MAX_PLAYER_HEAD_ANIMATION_SEQUENCE_Y;
+					break;
+				case KIND_PLAYER_BODY:
+					Size.Width = PLAYER_WIDTH / 2;
+					Size.Height = PLAYER_HEIGHT / 2;
+					TextureID = m_TextureIDs[KIND_PLAYER_BODY];
+					Animation_Sequence_X = MAX_PLAYER_BODY_ANIMATION_SEQUENCE_X;
+					Animation_Sequence_Y = MAX_PLAYER_BODY_ANIMATION_SEQUENCE_Y;
+					Pos.z = 0.5f / RENDER_TRANSLATION_SCALE;
+					break;
+				case KIND_BOSS:
+					Size.Width = BOSS_WIDTH / 2;
+					Size.Height = BOSS_HEIGHT / 2;
+					TextureID = m_TextureIDs[KIND_BOSS];
+					Animation_Sequence_X = MAX_BOSS_ANIMATION_SEQUENCE_X;
+					Animation_Sequence_Y = MAX_BOSS_ANIMATION_SEQUENCE_Y;
+					break;
+				case KIND_PRESSURE_PLATE:
+					Size.Width = PRESSURE_PLATE_WIDTH;
+					Size.Height = PRESSURE_PLATE_HEIGHT;
+					TextureID = m_TextureIDs[KIND_PRESSURE_PLATE];
+					Animation_Sequence_X = MAX_PRESSURE_PLATE_ANIMATION_SEQUENCE_X;
+					Animation_Sequence_Y = MAX_PRESSURE_PLATE_ANIMATION_SEQUENCE_Y;
+					break;
+				case KIND_BULLET_1:
+					Size.Width = BULLET_WIDTH;
+					Size.Height = BULLET_HEIGHT;
+					TextureID = m_TextureIDs[KIND_BULLET_1];
+					Animation_Sequence_X = 1;
+					Animation_Sequence_Y = 1;
+					break;
+				case KIND_BULLET_2:
+					Size.Width = BULLET_WIDTH;
+					Size.Height = BULLET_HEIGHT;
+					TextureID = m_TextureIDs[KIND_BULLET_2];
+					Animation_Sequence_X = 1;
+					Animation_Sequence_Y = 1;
+					break;
+				}
 			}
 
 			// 월드 좌표계로 변환
@@ -358,7 +382,7 @@ void CPlayScene::RenderUI()
 	}
 
 	// Draw PlayerHP
-	float PlayerHP_Cnt = (float)m_GameInfo.Player_HP / 2;
+	float PlayerHP_Cnt = (float)m_GameInfo.Player_HP[m_GameInfo.Player_ClientID] / 2;
 	for (int i = 0; i < (int)(PLAYER_INIT_HP / 2.0f + 0.5f); ++i)
 	{
 		Pos.x = UI_PLAYER_HEART_POS_X + (i * UI_PLAYER_HEART_WIDTH * m_TranslationScale);
@@ -411,11 +435,10 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 		err_quit((char*)"connect()");																   //
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	WaitForSingleObject(hCallCommunicationEvent, INFINITE);
+	static CommunicationData CommunicationBffuer[MAX_OBJECT];
+	static CommunicationData2 CommunicationData_Sub;
 	// recv(m_RenderObjects)
-	for (int i = 0; i < MAX_OBJECT; ++i)
-		m_RenderObjects[i].Obj_Type = KIND_NULL;
-	retval = recvn(server_sock, (char*)m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, 0);
+	retval = recvn(server_sock, (char*)CommunicationBffuer, sizeof(CommunicationData)*MAX_OBJECT, 0);
 	if (retval == SOCKET_ERROR || retval == 0)
 	{
 		closesocket(server_sock);
@@ -426,7 +449,7 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 		err_display((char*)"recv()");
 	}
 	// recv(m_GameInfo)
-	retval = recvn(server_sock, (char*)&m_GameInfo, sizeof(CommunicationData2), 0);
+	retval = recvn(server_sock, (char*)&CommunicationData_Sub, sizeof(CommunicationData2), 0);
 	if (retval == SOCKET_ERROR || retval == 0)
 	{
 		closesocket(server_sock);
@@ -436,35 +459,20 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 			<< endl;
 		err_display((char*)"recv()");
 	}
-	SetEvent(hCompleteCommunicaitionEvent);
+	EnterCriticalSection(&cs);
+	bRecvComplete = true;
+	LeaveCriticalSection(&cs);
+	WaitForSingleObject(hCopyStart, INFINITE);
+	memcpy_s(m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, CommunicationBffuer, sizeof(CommunicationData)*MAX_OBJECT);
+	memcpy_s(&m_GameInfo, sizeof(CommunicationData2), &CommunicationData_Sub, sizeof(CommunicationData2));
+	SetEvent(hCopyComplete);
+	EnterCriticalSection(&cs);
+	bRecvComplete = false;
+	LeaveCriticalSection(&cs);
 
 	bool ShowGamestate = false;
 	while (true)
 	{
-		// Inform GameState
-		if (m_GameInfo.GameFail == true)
-		{
-			if (ShowGamestate == false)
-			{
-				int ShowType = 0; // 0: GameFail, 1: GameClear;
-				HANDLE hThread = CreateThread(NULL, 0, ShowGameState, (LPVOID)&ShowType, 0, NULL);
-				if (hThread != NULL) CloseHandle(hThread);
-				ShowGamestate = true;
-			}
-		}
-		else if (m_GameInfo.GameClear)
-		{
-			if (ShowGamestate == false)
-			{
-				int ShowType = 1; // 0: GameFail, 1: GameClear;
-				HANDLE hThread = CreateThread(NULL, 0, ShowGameState, (LPVOID)&ShowType, 0, NULL);
-				if (hThread != NULL) CloseHandle(hThread);
-				ShowGamestate = true;
-			}
-		}
-		if (bProgramExit == true) break;
-		//서버 통신을 부르길 기다림
-		WaitForSingleObject(hCallCommunicationEvent, INFINITE);
 		// send(m_KeyState)
 		retval = send(server_sock, (char*)m_KeyState, sizeof(bool) * 256, 0);
 		if (retval == SOCKET_ERROR)
@@ -481,22 +489,46 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 		}
 
 		// recv(m_RenderObjects)
-		retval = recvn(server_sock, (char*)m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, 0);
+		retval = recvn(server_sock, (char*)CommunicationBffuer, sizeof(CommunicationData)*MAX_OBJECT, 0);
 		if (retval == SOCKET_ERROR || retval == 0)
 		{
 			err_display((char*)"recv()");
 			break;
 		}
 		// recv(m_GameInfo)
-		retval = recvn(server_sock, (char*)&m_GameInfo, sizeof(CommunicationData2), 0);
+		retval = recvn(server_sock, (char*)&CommunicationData_Sub, sizeof(CommunicationData2), 0);
 		if (retval == SOCKET_ERROR || retval == 0)
 		{
 			err_display((char*)"recv()");
 			break;
 		}
 
-		//서버 통신이 완료 됬음을 알림
-		SetEvent(hCompleteCommunicaitionEvent);
+		EnterCriticalSection(&cs);
+		bRecvComplete = true;
+		LeaveCriticalSection(&cs);
+		WaitForSingleObject(hCopyStart, INFINITE);
+		//Point Sub_Pos = CommunicationBffuer[PLAYER_BODY_ID1].Obj_Pos - m_RenderObjects[PLAYER_BODY_ID1].Obj_Pos;
+		//Vector Sub_Vel = CommunicationBffuer[PLAYER_BODY_ID1].Obj_Velocity - m_RenderObjects[PLAYER_BODY_ID1].Obj_Velocity;
+		//std::cout << "SubPos:(" << Sub_Pos.x << "," << Sub_Pos.y << "," << Sub_Pos.z << ")" << std::endl;
+		//std::cout << "SubVel:(" << Sub_Vel.i << "," << Sub_Vel.j << "," << Sub_Vel.k << ")" << std::endl;
+		for (int i = 0; i < MAX_OBJECT; ++i)
+		{
+			m_RenderObjects[i].Obj_Type = CommunicationBffuer[i].Obj_Type;
+			m_RenderObjects[i].Obj_Pos += (CommunicationBffuer[i].Obj_Pos - m_RenderObjects[i].Obj_Pos) * 0.5f;
+			//m_RenderObjects[i].Obj_Velocity += (CommunicationBffuer[i].Obj_Velocity - m_RenderObjects[i].Obj_Velocity) * 0.5f;
+			m_RenderObjects[i].Obj_Velocity = CommunicationBffuer[i].Obj_Velocity;
+			m_RenderObjects[i].Obj_Pos_InTexture = CommunicationBffuer[i].Obj_Pos_InTexture;
+			//m_RenderObjects[i].Obj_Pos_InTexture.x = (CommunicationBffuer[i].Obj_Pos_InTexture.x != 0) ? (int)((CommunicationBffuer[i].Obj_Pos_InTexture.x - m_RenderObjects[i].Obj_Pos_InTexture.x) * 0.5f + 0.5f) : 0;
+			//m_RenderObjects[i].Obj_Pos_InTexture.y = CommunicationBffuer[i].Obj_Pos_InTexture.y;
+		}
+		//memcpy_s(m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, CommunicationBffuer, sizeof(CommunicationData)*MAX_OBJECT);
+		memcpy_s(&m_GameInfo, sizeof(CommunicationData2), &CommunicationData_Sub, sizeof(CommunicationData2));
+		SetEvent(hCopyComplete);
+		EnterCriticalSection(&cs);
+		bRecvComplete = false;
+		LeaveCriticalSection(&cs);
+
+		this_thread::sleep_for(chrono::milliseconds(1000 / CPS));
 	}
 
 	cout

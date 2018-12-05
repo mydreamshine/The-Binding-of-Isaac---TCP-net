@@ -29,12 +29,11 @@ struct CommunicationData
 
 struct CommunicationData2
 {
+	int  Player_ClientID;
 	int  Player_Index[MAX_CLIENT];
-	int  Player_HP;
+	int  Player_HP[MAX_CLIENT];
+	bool Player_Hited[MAX_CLIENT];
 	int  Boss_HP;
-	bool GameFail;
-	bool GameClear;
-	bool bPlayerHited[MAX_CLIENT];
 };
 
 

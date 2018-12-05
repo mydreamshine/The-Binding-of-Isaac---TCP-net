@@ -120,13 +120,6 @@ int GameProcessFunc::CreateNewPlayer()
 	return ClientID;
 }
 
-// Player_Body_Index (Player_Head_Index = Player_Body_Index + 1)
-void GameProcessFunc::ComPlayerBodyIndex(int indexArray[])
-{
-	for (int i = 0; i < MAX_CLIENT; ++i)
-		indexArray[i] = MAX_CLIENT + i*2;
-}
-
 int GameProcessFunc::FindNullPlayerIndex(int indexArray[])
 {
 	int k = 0;
@@ -218,13 +211,14 @@ bool GameProcessFunc::SendCommunicationData(SOCKET sock, int ClientID)
 		return false;
 	}
 	CommunicationData2 CommunicationData_SubInfo;
-	GameProcessFunc::ComPlayerBodyIndex(CommunicationData_SubInfo.Player_Index);
-	CommunicationData_SubInfo.Player_HP = PlayerBuffer[ClientID]->GetHP();
-	CommunicationData_SubInfo.Boss_HP = (BossObj != NULL) ? BossObj->GetHP() : 0;
-	CommunicationData_SubInfo.GameFail = GameProcessFunc::CheckGameFail(ClientID);
-	CommunicationData_SubInfo.GameClear = GameProcessFunc::CheckGameClear();
+	CommunicationData_SubInfo.Player_ClientID = ClientID;
+	CommunicationData_SubInfo.Boss_HP = (BossObj != NULL) ? BossObj->GetHP() : -1;
 	for (int i = 0; i < MAX_CLIENT; ++i)
-		CommunicationData_SubInfo.bPlayerHited[i] = (PlayerBuffer[i] != NULL) ? !PlayerBuffer[i]->CheckHitDealayComplete() : false;
+	{
+		CommunicationData_SubInfo.Player_Index[i] = MAX_CLIENT + i * 2;
+		CommunicationData_SubInfo.Player_HP[i] = (PlayerBuffer[i] != NULL) ? PlayerBuffer[i]->GetHP() : -1;
+		CommunicationData_SubInfo.Player_Hited[i] = (PlayerBuffer[i] != NULL) ? !PlayerBuffer[i]->CheckHitDealayComplete() : false;
+	}
 	retval = send(sock, (char*)&CommunicationData_SubInfo, sizeof(CommunicationData2), 0);
 	if (retval == SOCKET_ERROR)
 	{

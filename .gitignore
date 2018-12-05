@@ -24,7 +24,15 @@
 *.la
 *.a
 
-# Executables
+# Executables Files
 *.exe
 *.out
 *.app
+*.ilk
+*.pdb
+
+# Executables Directory
+Client/.vs/
+Client/Client/Debug/
+Server/.vs/
+Server/Server/Debug/

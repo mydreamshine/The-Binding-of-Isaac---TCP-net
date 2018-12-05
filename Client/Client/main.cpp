@@ -20,13 +20,13 @@ void RenderScene(void)
 	static DWORD cur_Time = 0;
 	static float eTime = 0.0f;
 	static float Communcation_eTime = 0.0f;
+	float Cps = 0.0f;
 	static size_t WndTitlelen;
 
 	if (g_PrevRenderTime == 0)
 		g_PrevRenderTime = timeGetTime();
 	cur_Time = timeGetTime();
 	eTime = (float)(cur_Time - g_PrevRenderTime) / 1000.0f;
-
 	//일정 프레임이 나오도록 변경
 	if (eTime > 1.f / FPS) {
 
@@ -39,9 +39,9 @@ void RenderScene(void)
 
 		g_pScene->UpdateScene(eTime, &Communcation_eTime);
 
-		Communcation_eTime = (equal(Communcation_eTime, 0.0f)) ? 0.0f : 1.0f / Communcation_eTime;
+		Cps = (equal(Communcation_eTime, 0.0f)) ? 0.0f : 1.0f / Communcation_eTime;
 		WndTitlelen = strlen(FrameAndCommunicationRate);
-		_itoa_s((int)(Communcation_eTime), FrameAndCommunicationRate + WndTitlelen, 70 - WndTitlelen, 10);
+		_itoa_s((int)(Cps), FrameAndCommunicationRate + WndTitlelen, 70 - WndTitlelen, 10);
 		strcat_s(FrameAndCommunicationRate + WndTitlelen, 70 - WndTitlelen, " CPS)");
 
 		glutSetWindowTitle(FrameAndCommunicationRate);

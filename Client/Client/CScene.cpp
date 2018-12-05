@@ -537,9 +537,13 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 	bRecvComplete = false;
 	LeaveCriticalSection(&cs);
 
-	bool ShowGamestate = false;
 	while (true)
 	{
+		if (m_GameInfo.Player_ClientID >= 0)
+		{
+			if (m_GameInfo.Player_HP[m_GameInfo.Player_ClientID] == 0 && m_KeyState[27] == true) // ACII Code 27: ESCAPE KEY
+				break;
+		}
 		// send(m_KeyState)
 		retval = send(server_sock, (char*)m_KeyState, sizeof(bool) * 256, 0);
 		if (retval == SOCKET_ERROR)

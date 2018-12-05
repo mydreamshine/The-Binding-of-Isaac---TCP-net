@@ -30,9 +30,13 @@
 *.app
 *.ilk
 *.pdb
+*.iobj
+*.ipdb
 
 # Executables Directory
 Client/.vs/
 Client/Client/Debug/
+Client/Client/Release/
 Server/.vs/
 Server/Server/Debug/
+Server/Server/Release/

@@ -511,17 +511,17 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 		//Vector Sub_Vel = CommunicationBffuer[PLAYER_BODY_ID1].Obj_Velocity - m_RenderObjects[PLAYER_BODY_ID1].Obj_Velocity;
 		//std::cout << "SubPos:(" << Sub_Pos.x << "," << Sub_Pos.y << "," << Sub_Pos.z << ")" << std::endl;
 		//std::cout << "SubVel:(" << Sub_Vel.i << "," << Sub_Vel.j << "," << Sub_Vel.k << ")" << std::endl;
-		for (int i = 0; i < MAX_OBJECT; ++i)
-		{
-			m_RenderObjects[i].Obj_Type = CommunicationBffuer[i].Obj_Type;
-			m_RenderObjects[i].Obj_Pos += (CommunicationBffuer[i].Obj_Pos - m_RenderObjects[i].Obj_Pos) * 0.5f;
-			//m_RenderObjects[i].Obj_Velocity += (CommunicationBffuer[i].Obj_Velocity - m_RenderObjects[i].Obj_Velocity) * 0.5f;
-			m_RenderObjects[i].Obj_Velocity = CommunicationBffuer[i].Obj_Velocity;
-			m_RenderObjects[i].Obj_Pos_InTexture = CommunicationBffuer[i].Obj_Pos_InTexture;
-			//m_RenderObjects[i].Obj_Pos_InTexture.x = (CommunicationBffuer[i].Obj_Pos_InTexture.x != 0) ? (int)((CommunicationBffuer[i].Obj_Pos_InTexture.x - m_RenderObjects[i].Obj_Pos_InTexture.x) * 0.5f + 0.5f) : 0;
-			//m_RenderObjects[i].Obj_Pos_InTexture.y = CommunicationBffuer[i].Obj_Pos_InTexture.y;
-		}
-		//memcpy_s(m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, CommunicationBffuer, sizeof(CommunicationData)*MAX_OBJECT);
+		//for (int i = 0; i < MAX_OBJECT; ++i)
+		//{
+		//	m_RenderObjects[i].Obj_Type = CommunicationBffuer[i].Obj_Type;
+		//	m_RenderObjects[i].Obj_Pos += (CommunicationBffuer[i].Obj_Pos - m_RenderObjects[i].Obj_Pos) * 0.5f;
+		//	//m_RenderObjects[i].Obj_Velocity += (CommunicationBffuer[i].Obj_Velocity - m_RenderObjects[i].Obj_Velocity) * 0.5f;
+		//	m_RenderObjects[i].Obj_Velocity = CommunicationBffuer[i].Obj_Velocity;
+		//	m_RenderObjects[i].Obj_Pos_InTexture = CommunicationBffuer[i].Obj_Pos_InTexture;
+		//	//m_RenderObjects[i].Obj_Pos_InTexture.x = (CommunicationBffuer[i].Obj_Pos_InTexture.x != 0) ? (int)((CommunicationBffuer[i].Obj_Pos_InTexture.x - m_RenderObjects[i].Obj_Pos_InTexture.x) * 0.5f + 0.5f) : 0;
+		//	//m_RenderObjects[i].Obj_Pos_InTexture.y = CommunicationBffuer[i].Obj_Pos_InTexture.y;
+		//}
+		memcpy_s(m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, CommunicationBffuer, sizeof(CommunicationData)*MAX_OBJECT);
 		memcpy_s(&m_GameInfo, sizeof(CommunicationData2), &CommunicationData_Sub, sizeof(CommunicationData2));
 		SetEvent(hCopyComplete);
 		EnterCriticalSection(&cs);

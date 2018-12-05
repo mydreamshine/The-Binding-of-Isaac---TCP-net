@@ -1,16 +1,78 @@
 #include "stdafx.h"
 #include "CScene.h"
+#include "resource.h"
+#include <Commctrl.h>
+
 #include <thread>
 #include <time.h>
 #include <timeapi.h>
 
 using namespace std;
 
+DWORD  ServerAddress = 0;
+HANDLE hInputComplete_ServerAddr;
+
 bool   bProgramExit = false;
 bool   bRecvComplete = false;
 HANDLE hCopyStart;
 HANDLE hCopyComplete;
 CRITICAL_SECTION cs;
+
+INT_PTR CALLBACK ServerConnectProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		SendMessage(GetDlgItem(hDlg, IDC_IPADDRESS), IPM_SETFOCUS, 0, NULL);
+		return (INT_PTR)TRUE;
+	case WM_COMMAND:
+	{
+		if (LOWORD(wParam) == IDOK)
+		{
+			SendMessage(GetDlgItem(hDlg, IDC_IPADDRESS), IPM_GETADDRESS, 0, (LPARAM)&ServerAddress);
+			SetEvent(hInputComplete_ServerAddr);
+			EndDialog(hDlg, LOWORD(wParam));
+		}
+		else if (LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+		}
+	}
+	/*case WM_CLOSE: // Edit Control이나 IP Address Control과 같이 텍스트 입력 컨트롤이 포커스되면 원인을 알 수 없이 WM_CLOSE메세지가 발생한다.
+		EndDialog(hDlg, LOWORD(wParam));
+		return (INT_PTR)TRUE;*/
+	}
+	return (INT_PTR)FALSE;
+}
+
+DWORD WINAPI ShowServerConnectBox(LPVOID arg)
+{
+	HINSTANCE hInstance = GetModuleHandle(NULL);
+	/*HWND hServerConnect_Box = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_SERVER_CONNECT_BOX), HWND_DESKTOP, ServerConnectProc);
+	if (!hServerConnect_Box)
+		return 0;
+
+	ShowWindow(hServerConnect_Box, SW_SHOW);
+	UpdateWindow(hServerConnect_Box);*/
+	DialogBox(hInstance, MAKEINTRESOURCE(IDD_SERVER_CONNECT_BOX), NULL, ServerConnectProc);
+
+	//HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDD_SERVER_CONNECT_BOX));
+
+	//MSG msg;
+
+	//// 기본 메시지 루프입니다:
+	//while (GetMessage(&msg, nullptr, 0, 0))
+	//{
+	//	if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+	//	{
+	//		TranslateMessage(&msg);
+	//		DispatchMessage(&msg);
+	//	}
+	//}
+
+	return 0;
+}
 
 CPlayScene::~CPlayScene()
 {
@@ -423,14 +485,19 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 		err_quit((char*)"socket()");																   //
 																									   //
 	// Setting Socket(Protocol, IPv4, PortNum) <- Server Information								   //
+
+	HANDLE hThread = CreateThread(NULL, 0, ShowServerConnectBox, NULL, 0, NULL);
+	if (hThread != NULL) CloseHandle(hThread);
+	hInputComplete_ServerAddr = CreateEvent(NULL, FALSE, FALSE, NULL);
+	WaitForSingleObject(hInputComplete_ServerAddr, INFINITE);
 	SOCKADDR_IN serveraddr;																			   //
 	ZeroMemory(&serveraddr, sizeof(serveraddr));													   //
-																									   //
 	serveraddr.sin_family = AF_INET;																   //
-	serveraddr.sin_addr.s_addr = inet_addr(SERVER_ADDR);											   //
+	serveraddr.sin_addr.s_addr = htonl(ServerAddress);
 	serveraddr.sin_port = htons(SERVER_PORT);														   //
 																									   //
 	retval = connect(server_sock, (SOCKADDR*)&serveraddr, sizeof(serveraddr));						   //
+	CloseHandle(hInputComplete_ServerAddr);
 	if (retval == SOCKET_ERROR)																		   //
 		err_quit((char*)"connect()");																   //
 	/////////////////////////////////////////////////////////////////////////////////////////////////////

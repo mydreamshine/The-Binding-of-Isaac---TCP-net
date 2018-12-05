@@ -15,12 +15,11 @@ CScene* g_pScene = nullptr;
 
 void RenderScene(void)
 {
-
 	static char FrameAndCommunicationRate[70] = "The Binding of Isaac - Client (";
-
 	static DWORD g_PrevRenderTime = 0;
 	static DWORD cur_Time = 0;
-	static float eTime = 0.0f, Communcation_eTime = 0.0f;
+	static float eTime = 0.0f;
+	static float Communcation_eTime = 0.0f;
 	static size_t WndTitlelen;
 
 	if (g_PrevRenderTime == 0)
@@ -40,8 +39,9 @@ void RenderScene(void)
 
 		g_pScene->UpdateScene(eTime, &Communcation_eTime);
 
+		Communcation_eTime = (equal(Communcation_eTime, 0.0f)) ? 0.0f : 1.0f / Communcation_eTime;
 		WndTitlelen = strlen(FrameAndCommunicationRate);
-		_itoa_s((int)(1.0f / Communcation_eTime), FrameAndCommunicationRate + WndTitlelen, 70 - WndTitlelen, 10);
+		_itoa_s((int)(Communcation_eTime), FrameAndCommunicationRate + WndTitlelen, 70 - WndTitlelen, 10);
 		strcat_s(FrameAndCommunicationRate + WndTitlelen, 70 - WndTitlelen, " CPS)");
 
 		glutSetWindowTitle(FrameAndCommunicationRate);
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);					     //
 	glutInitWindowPosition(0, 0);												     //
 	glutInitWindowSize(WND_WIDTH, WND_HEIGHT);									     //
-	int hWnd = glutCreateWindow("The Binding of Isaac - Client");							     //
+	int hWnd = glutCreateWindow("The Binding of Isaac - Client");					 //
 	srand(static_cast <unsigned> (time(0)));									     //
 																				     //
 	glewInit();																	     //

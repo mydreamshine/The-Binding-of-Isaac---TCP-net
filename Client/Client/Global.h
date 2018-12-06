@@ -5,7 +5,6 @@
 
 // Network Option
 #define SERVER_PORT 9000
-#define SERVER_ADDR "127.0.0.1"
 #define MAX_CLIENT 4
 #define CPS 15 // Communication Per Second (1초당 통신횟수)
 

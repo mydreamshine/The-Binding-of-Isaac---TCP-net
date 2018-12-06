@@ -12,8 +12,11 @@ using namespace std;
 DWORD  ServerAddress = 0;
 HANDLE hInputComplete_ServerAddr;
 
-HANDLE hCallCommunicationEvent;
-HANDLE hCompleteCommunicaitionEvent;
+bool   bProgramExit = false;
+bool   bRecvComplete = false;
+HANDLE hCopyStart;
+HANDLE hCopyComplete;
+CRITICAL_SECTION cs;
 
 INT_PTR CALLBACK ServerConnectProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -77,8 +80,9 @@ CPlayScene::~CPlayScene()
 		m_pRenderer->DeleteTexture(m_TextureIDs[i]);
 	if (m_pRenderer) delete m_pRenderer;
 
-	CloseHandle(hCallCommunicationEvent);
-	CloseHandle(hCompleteCommunicaitionEvent);
+	CloseHandle(hCopyStart);
+	CloseHandle(hCopyComplete);
+	DeleteCriticalSection(&cs);
 }
 
 bool CPlayScene::InitialRenderer(int windowSizeX, int windowSizeY, float TranslationScale)
@@ -113,8 +117,9 @@ bool CPlayScene::InitialObjects()
 		m_GameInfo.Player_Hited[i] = false;
 		m_GameInfo.Player_HP[i] = -1;
 	}
-	hCallCommunicationEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
-	hCompleteCommunicaitionEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	hCopyStart = CreateEvent(NULL, FALSE, FALSE, NULL);
+	hCopyComplete = CreateEvent(NULL, FALSE, FALSE, NULL);
+	InitializeCriticalSection(&cs);
 	return true;
 }
 
@@ -141,25 +146,21 @@ void CPlayScene::SpecialKeyUp(int key, int x, int y)
 
 void CPlayScene::UpdateScene(float elapsedTime, float* com_elapsedTime)
 {
-	//업데이트에서 일정 시간마다 서버와의 통신 스레드를 부르도록 설정
-
-	static float communication_eTime = 0.0f;
-	communication_eTime += elapsedTime;
-	if (1.f / CPS < communication_eTime) {
+	// 매 업데이트마다 Recv가 완료된 상태인지 확인
+	EnterCriticalSection(&cs);
+	bool RecvComplete = bRecvComplete;
+	LeaveCriticalSection(&cs);
+	if (RecvComplete) {
 		static DWORD PrevComTime = 0;
 		static DWORD Cur_ComTime = 0;
 
-		//서버와의 통신 설정  //서버에서 그릴 것들을 가져옴
-		SetEvent(hCallCommunicationEvent);
-		//통신이 완료 될 때 까지 기다림
-		WaitForSingleObject(hCompleteCommunicaitionEvent, INFINITE);
-
+		SetEvent(hCopyStart);
+		WaitForSingleObject(hCopyComplete, INFINITE);
 		if (PrevComTime == 0)
 			PrevComTime = timeGetTime();
 		Cur_ComTime = timeGetTime();
 		*com_elapsedTime = (float)(Cur_ComTime - PrevComTime) / 1000.0f;
 		PrevComTime = Cur_ComTime;
-		communication_eTime = 0.0f;
 	}
 	else {
 		//통신을 하지 않을 경우 클라 자체에서 랜더링을 위한 데이터를 계산함
@@ -260,7 +261,7 @@ void CPlayScene::RendrScene()
 	m_pRenderer->DrawTextureRect(0.0f, 0.0f, 0.0f, WND_WIDTH, WND_HEIGHT, 1.0f, 1.0f, 1.0f, 1.0f, m_TextureIDs[KIND_BACKGROND]);
 	if (m_GameInfo.Player_ClientID >= 0)
 	{
-		if (m_GameInfo.Boss_HP == 0)
+		if(m_GameInfo.Boss_HP == 0)
 			m_pRenderer->DrawTextureRect(0.0f, 0.0f, 0.0f, 599, 259, 1.0f, 1.0f, 1.0f, 1.0f, m_TextureIDs[KIND_GAME_CLEAR]);
 		else if (m_GameInfo.Player_HP[m_GameInfo.Player_ClientID] == 0)
 			m_pRenderer->DrawTextureRect(0.0f, 0.0f, 0.0f, 545, 253, 1.0f, 1.0f, 1.0f, 1.0f, m_TextureIDs[KIND_GAME_FAIL]);
@@ -501,9 +502,10 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 		err_quit((char*)"connect()");																   //
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	WaitForSingleObject(hCallCommunicationEvent, INFINITE);
+	static CommunicationData CommunicationBffuer[MAX_OBJECT];
+	static CommunicationData2 CommunicationData_Sub;
 	// recv(m_RenderObjects)
-	retval = recvn(server_sock, (char*)m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, 0);
+	retval = recvn(server_sock, (char*)CommunicationBffuer, sizeof(CommunicationData)*MAX_OBJECT, 0);
 	if (retval == SOCKET_ERROR || retval == 0)
 	{
 		closesocket(server_sock);
@@ -514,7 +516,7 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 		err_display((char*)"recv()");
 	}
 	// recv(m_GameInfo)
-	retval = recvn(server_sock, (char*)&m_GameInfo, sizeof(CommunicationData2), 0);
+	retval = recvn(server_sock, (char*)&CommunicationData_Sub, sizeof(CommunicationData2), 0);
 	if (retval == SOCKET_ERROR || retval == 0)
 	{
 		closesocket(server_sock);
@@ -524,7 +526,16 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 			<< endl;
 		err_display((char*)"recv()");
 	}
-	SetEvent(hCompleteCommunicaitionEvent);
+	EnterCriticalSection(&cs);
+	bRecvComplete = true;
+	LeaveCriticalSection(&cs);
+	WaitForSingleObject(hCopyStart, INFINITE);
+	memcpy_s(m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, CommunicationBffuer, sizeof(CommunicationData)*MAX_OBJECT);
+	memcpy_s(&m_GameInfo, sizeof(CommunicationData2), &CommunicationData_Sub, sizeof(CommunicationData2));
+	SetEvent(hCopyComplete);
+	EnterCriticalSection(&cs);
+	bRecvComplete = false;
+	LeaveCriticalSection(&cs);
 
 	while (true)
 	{
@@ -533,10 +544,6 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 			if (m_GameInfo.Player_HP[m_GameInfo.Player_ClientID] == 0 && m_KeyState[27] == true) // ACII Code 27: ESCAPE KEY
 				break;
 		}
-
-		//서버 통신을 부르길 기다림
-		WaitForSingleObject(hCallCommunicationEvent, INFINITE);
-
 		// send(m_KeyState)
 		retval = send(server_sock, (char*)m_KeyState, sizeof(bool) * 256, 0);
 		if (retval == SOCKET_ERROR)
@@ -553,21 +560,46 @@ void CPlayScene::CommunicationWithServer(LPVOID arg)
 		}
 
 		// recv(m_RenderObjects)
-		retval = recvn(server_sock, (char*)m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, 0);
+		retval = recvn(server_sock, (char*)CommunicationBffuer, sizeof(CommunicationData)*MAX_OBJECT, 0);
 		if (retval == SOCKET_ERROR || retval == 0)
 		{
 			err_display((char*)"recv()");
 			break;
 		}
 		// recv(m_GameInfo)
-		retval = recvn(server_sock, (char*)&m_GameInfo, sizeof(CommunicationData2), 0);
+		retval = recvn(server_sock, (char*)&CommunicationData_Sub, sizeof(CommunicationData2), 0);
 		if (retval == SOCKET_ERROR || retval == 0)
 		{
 			err_display((char*)"recv()");
 			break;
 		}
-		//서버 통신이 완료 됬음을 알림
-		SetEvent(hCompleteCommunicaitionEvent);
+
+		EnterCriticalSection(&cs);
+		bRecvComplete = true;
+		LeaveCriticalSection(&cs);
+		WaitForSingleObject(hCopyStart, INFINITE);
+		//Point Sub_Pos = CommunicationBffuer[PLAYER_BODY_ID1].Obj_Pos - m_RenderObjects[PLAYER_BODY_ID1].Obj_Pos;
+		//Vector Sub_Vel = CommunicationBffuer[PLAYER_BODY_ID1].Obj_Velocity - m_RenderObjects[PLAYER_BODY_ID1].Obj_Velocity;
+		//std::cout << "SubPos:(" << Sub_Pos.x << "," << Sub_Pos.y << "," << Sub_Pos.z << ")" << std::endl;
+		//std::cout << "SubVel:(" << Sub_Vel.i << "," << Sub_Vel.j << "," << Sub_Vel.k << ")" << std::endl;
+		//for (int i = 0; i < MAX_OBJECT; ++i)
+		//{
+		//	m_RenderObjects[i].Obj_Type = CommunicationBffuer[i].Obj_Type;
+		//	m_RenderObjects[i].Obj_Pos += (CommunicationBffuer[i].Obj_Pos - m_RenderObjects[i].Obj_Pos) * 0.5f;
+		//	//m_RenderObjects[i].Obj_Velocity += (CommunicationBffuer[i].Obj_Velocity - m_RenderObjects[i].Obj_Velocity) * 0.5f;
+		//	m_RenderObjects[i].Obj_Velocity = CommunicationBffuer[i].Obj_Velocity;
+		//	m_RenderObjects[i].Obj_Pos_InTexture = CommunicationBffuer[i].Obj_Pos_InTexture;
+		//	//m_RenderObjects[i].Obj_Pos_InTexture.x = (CommunicationBffuer[i].Obj_Pos_InTexture.x != 0) ? (int)((CommunicationBffuer[i].Obj_Pos_InTexture.x - m_RenderObjects[i].Obj_Pos_InTexture.x) * 0.5f + 0.5f) : 0;
+		//	//m_RenderObjects[i].Obj_Pos_InTexture.y = CommunicationBffuer[i].Obj_Pos_InTexture.y;
+		//}
+		memcpy_s(m_RenderObjects, sizeof(CommunicationData)*MAX_OBJECT, CommunicationBffuer, sizeof(CommunicationData)*MAX_OBJECT);
+		memcpy_s(&m_GameInfo, sizeof(CommunicationData2), &CommunicationData_Sub, sizeof(CommunicationData2));
+		SetEvent(hCopyComplete);
+		EnterCriticalSection(&cs);
+		bRecvComplete = false;
+		LeaveCriticalSection(&cs);
+
+		this_thread::sleep_for(chrono::milliseconds(1000 / CPS));
 	}
 
 	cout

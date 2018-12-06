@@ -910,7 +910,7 @@ void GameProcessFunc::BossHighJump(float ElapsedTime)
 		BossObj->SetPos_InTextureX(4);
 
 		Direction = BossObj->GetVelocity();
-		Direction.k = -jumpforce * (2 * total_eTime + 1.5f);
+		Direction.k = -jumpforce * (2 * total_eTime - 1.5f);
 
 		BossObj->SetVelocity(Direction);
 		ps.z = -jumpforce * (total_eTime * (total_eTime - 1.5f));

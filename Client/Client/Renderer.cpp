@@ -396,7 +396,7 @@ void Renderer::DrawTextureRectHeightSeqXY(float x, float y, float z, float sx, f
 
 	GetGLPosition(x, y, &newX, &newY);
 	GetGLShadow(z, &shadowY);
-	GetGLShadow(sy / 2.f, &baseY);
+	GetGLShadow(sy / 10.f, &baseY);
 
 	GLuint shaderSeq = m_TextureRectSeqShader;
 	GLuint shaderHeight = m_TextureRectShader;
@@ -409,7 +409,7 @@ void Renderer::DrawTextureRectHeightSeqXY(float x, float y, float z, float sx, f
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-	glUniform4f(glGetUniformLocation(shaderHeight, "u_Trans"), newX, newY, sx, sy);
+	glUniform4f(glGetUniformLocation(shaderHeight, "u_Trans"), newX + 0.02f, newY, sx, sy);
 	glUniform4f(glGetUniformLocation(shaderHeight, "u_Color"), 1, 1, 1, a);
 	int texUniform = glGetUniformLocation(shaderHeight, "u_Texture");
 	glUniform1i(texUniform, 0);
